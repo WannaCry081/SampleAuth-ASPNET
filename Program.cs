@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using sample_auth_aspnet.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,5 +39,10 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
         options.ReportApiVersions = true;
         options.DefaultApiVersion = new ApiVersion(1, 0);
     });
+    #endregion
+
+    #region SQL Server 
+    services.AddDbContext<DataContext>(options =>
+        options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
     #endregion
 }
