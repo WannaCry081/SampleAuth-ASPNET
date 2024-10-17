@@ -50,4 +50,6 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     services.AddDbContext<DataContext>(options =>
         options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
     #endregion
+
+    services.AddLogging();
 }
