@@ -11,9 +11,9 @@ public partial class DataContext
             .HasIndex(u => new
             {
                 u.Email,
-                u.UserName
             })
             .IsUnique();
+
         base.OnModelCreating(modelBuilder);
     }
 }
