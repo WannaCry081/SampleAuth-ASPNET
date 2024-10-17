@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -7,6 +9,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+ConfigureServices(builder.Services, builder.Configuration);
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -23,3 +26,16 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
+static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+{
+    #region Versioning
+    services.AddApiVersioning(options =>
+    {
+        options.AssumeDefaultVersionWhenUnspecified = true;
+        options.ReportApiVersions = true;
+        options.DefaultApiVersion = new ApiVersion(1, 0);
+    });
+    #endregion
+}
