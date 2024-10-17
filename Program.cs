@@ -52,4 +52,6 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     #endregion
 
     services.AddLogging();
+
+    services.AddTransient<DataContext>();
 }
