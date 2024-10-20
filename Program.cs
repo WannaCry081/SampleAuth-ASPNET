@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using sample_auth_aspnet.Data;
+using sample_auth_aspnet.Services.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,4 +55,6 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     services.AddLogging();
 
     services.AddTransient<DataContext>();
+
+    services.AddScoped<IAuthService, AuthService>();
 }
