@@ -3,7 +3,7 @@ using static sample_auth_aspnet.Models.Utils.Errors;
 
 namespace sample_auth_aspnet.Models.Response;
 
-public class ApiReponse<T>
+public class ApiResponse<T>
 {
     public bool Success { get; init; }
     public T? Data { get; init; }
@@ -15,9 +15,9 @@ public class ApiReponse<T>
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
     public List<string>? ValidationErors { get; init; }
 
-    public static ApiReponse<T> SuccessResponse(T data, string message)
+    public static ApiResponse<T> SuccessResponse(T data, string message)
     {
-        return new ApiReponse<T>
+        return new ApiResponse<T>
         {
             Success = true,
             Data = data,
@@ -25,9 +25,9 @@ public class ApiReponse<T>
         };
     }
 
-    public static ApiReponse<T> ErrorResponse(T data, string message, List<string>? validationErrors = null)
+    public static ApiResponse<T> ErrorResponse(T data, string message, List<string>? validationErrors = null)
     {
-        return new ApiReponse<T>
+        return new ApiResponse<T>
         {
             Success = false,
             Data = data,
