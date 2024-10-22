@@ -29,6 +29,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
@@ -50,6 +51,30 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     #region SQL Server 
     services.AddDbContext<DataContext>(options =>
         options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+    #endregion
+
+    #region Authentication
+    var jwt = configuration.GetSection("JWT");
+    var key = jwt["Key"];
+
+    services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwt["Issuer"],
+            ValidAudience = jwt["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!))
+        };
+    });
     #endregion
 
     services.AddLogging();
