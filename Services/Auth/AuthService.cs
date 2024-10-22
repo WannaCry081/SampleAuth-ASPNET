@@ -20,7 +20,7 @@ public class AuthService(
         if (!authRegister.Password.Equals(authRegister.RePassword))
         {
             return ApiResponse<AuthDto>.ErrorResponse(
-                Errors.Unauthorized, Errors.ErrorType.BadRequest);
+                "Passwords does not match.", Errors.ErrorType.BadRequest);
         }
 
         var isUserExists = await context.Users.FirstOrDefaultAsync(
@@ -30,7 +30,7 @@ public class AuthService(
         if (isUserExists != null)
         {
             return ApiResponse<AuthDto>.ErrorResponse(
-                $"User {Errors.AlreadyExists.ToLower()}", Errors.ErrorType.BadRequest);
+                $"User {Errors.AlreadyExists.ToLower()}.", Errors.ErrorType.BadRequest);
         }
 
         var user = mapper.Map<User>(authRegister);
