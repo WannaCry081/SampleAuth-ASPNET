@@ -6,7 +6,7 @@ using System.IdentityModel.Tokens.Jwt;
 
 namespace sample_auth_aspnet.Services.Utils;
 
-public static class Token
+public static class TokenUtil
 {
     private static string GenerateToken(User user, DateTime expires, IConfiguration configuration, bool isRefreshToken = false)
     {
