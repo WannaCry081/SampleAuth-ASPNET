@@ -42,8 +42,8 @@ public class AuthService(
         return ApiResponse<AuthDto>.SuccessResponse(
             new AuthDto
             {
-                Access = Token.GenerateAccess(user, configuration),
-                Refresh = Token.GenerateRefresh(user, configuration)
+                Access = TokenUtil.GenerateAccess(user, configuration),
+                Refresh = TokenUtil.GenerateRefresh(user, configuration)
             }
         );
     }
