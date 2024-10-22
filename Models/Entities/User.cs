@@ -5,6 +5,7 @@ namespace sample_auth_aspnet.Models.Entities;
 [Index(nameof(Email), IsUnique = true)]
 public sealed class User : BaseEntity
 {
+    public Guid UserId { get; init; } = Guid.NewGuid();
     public string Email { get; set; } = null!;
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
