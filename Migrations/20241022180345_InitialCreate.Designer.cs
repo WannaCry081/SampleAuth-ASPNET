@@ -12,7 +12,7 @@ using sample_auth_aspnet.Data;
 namespace sample_auth_aspnet.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20241021183127_InitialCreate")]
+    [Migration("20241022180345_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -52,6 +52,9 @@ namespace sample_auth_aspnet.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
