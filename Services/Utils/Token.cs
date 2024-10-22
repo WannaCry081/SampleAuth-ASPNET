@@ -43,5 +43,12 @@ public static class Token
 
         return GenerateToken(user, expiry, configuration);
     }
+
+    public static string GenerateRefresh(User user, IConfiguration configuration)
+    {
+        var expiry = DateTime.UtcNow.AddDays(Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]));
+
+        return GenerateToken(user, expiry, configuration, isRefreshToken: true);
+    }
 }
 
