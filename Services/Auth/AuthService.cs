@@ -9,12 +9,20 @@ using sample_auth_aspnet.Services.Utils;
 
 namespace sample_auth_aspnet.Services.Auth;
 
+/// <summary>
+/// Service class for authentication operation.
+/// </summary>
 public class AuthService(
     DataContext context,
     IMapper mapper,
     IConfiguration configuration
 ) : IAuthService
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="authRegister"></param>
+    /// <returns></returns>
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
         if (!authRegister.Password.Equals(authRegister.RePassword))
