@@ -19,27 +19,23 @@ public class AuthService(
 ) : IAuthService
 {
     /// <summary>
-    /// 
+    /// Registers a new user and returns access and refresh tokens.
     /// </summary>
-    /// <param name="authRegister"></param>
-    /// <returns></returns>
+    /// <param name="authRegister">The user registration details</param>
+    /// <returns>An access and refresh tokens if registration is successful</returns>
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
         if (!authRegister.Password.Equals(authRegister.RePassword))
-        {
             return ApiResponse<AuthDto>.ErrorResponse(
-                "Passwords does not match.", Errors.ErrorType.BadRequest);
-        }
+                "Passwords do not match.", Errors.ErrorType.BadRequest);
 
         var isUserExists = await context.Users.FirstOrDefaultAsync(
             u => u.Email.Equals(authRegister.Email)
         );
 
         if (isUserExists != null)
-        {
             return ApiResponse<AuthDto>.ErrorResponse(
-                $"User {Errors.AlreadyExists.ToLower()}.", Errors.ErrorType.BadRequest);
-        }
+                $"A user with this email already exists.", Errors.ErrorType.BadRequest);
 
         var user = mapper.Map<User>(authRegister);
         user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
@@ -47,12 +43,13 @@ public class AuthService(
         await context.Users.AddAsync(user);
         await context.SaveChangesAsync();
 
-        return ApiResponse<AuthDto>.SuccessResponse(
-            new AuthDto
-            {
-                Access = TokenUtil.GenerateAccess(user, configuration),
-                Refresh = TokenUtil.GenerateRefresh(user, configuration)
-            }
-        );
+        var authDto = new AuthDto
+        {
+            Access = TokenUtil.GenerateAccess(user, configuration),
+            Refresh = TokenUtil.GenerateRefresh(user, configuration)
+        };
+
+        return ApiResponse<AuthDto>.SuccessResponse(authDto);
     }
+
 }
