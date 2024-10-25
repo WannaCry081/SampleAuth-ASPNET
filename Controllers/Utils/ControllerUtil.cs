@@ -16,7 +16,7 @@ public static class ControllerUtil
             ErrorType.BadRequest => new BadRequestObjectResult(apiResponse),
             ErrorType.Unauthorized => new UnauthorizedResult(),
             ErrorType.ValidationError => new BadRequestObjectResult(apiResponse),
-            ErrorType.InternalServerError => new StatusCodeResult(500),
+            ErrorType.InternalServer => new StatusCodeResult(500),
             _ => new BadRequestObjectResult(apiResponse)
         };
     }
