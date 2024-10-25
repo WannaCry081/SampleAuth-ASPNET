@@ -11,4 +11,9 @@ public static class Success
     {
         return $"{entity} has been successfully created";
     }
+
+    public static string ENTITY_UPDATED(string entity)
+    {
+        return $"{entity} has been successfully updated";
+    }
 }
