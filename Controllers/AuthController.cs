@@ -31,7 +31,7 @@ public class AuthController(
         {
             var response = await authService.RegisterUserAsync(authRegister);
 
-            if (!response.Success)
+            if (response.Status.Equals("error"))
                 return ControllerUtil.GetActionResultFromError(response);
 
             return Ok(response);
@@ -50,7 +50,7 @@ public class AuthController(
         {
             var response = await authService.LoginUserAsync(authLogin);
 
-            if (!response.Success) 
+            if (response.Status.Equals("error"))
                 return ControllerUtil.GetActionResultFromError(response);
 
             return Ok(response);
