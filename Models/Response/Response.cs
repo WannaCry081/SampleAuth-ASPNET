@@ -5,35 +5,36 @@ namespace sample_auth_aspnet.Models.Response;
 
 public class ApiResponse<T>
 {
-    public bool Success { get; init; }
-    public T? Data { get; init; }
+    public string Status { get; init; }
+    public string Message { get; init; }
 
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-    public string? Message { get; init; }
+    public T? Data { get; init; }
 
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
     public ErrorType? ErrorType { get; init; }
 
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-    public List<string>? ValidationErors { get; init; }
+    public Dictionary<string, string>? Details { get; init; }
 
-    public static ApiResponse<T> SuccessResponse(T data)
+    public static ApiResponse<T> SuccessResponse(T data, string message = "")
     {
         return new ApiResponse<T>
         {
-            Success = true,
+            Status = "success",
             Data = data,
+            Message = message
         };
     }
 
-    public static ApiResponse<T> ErrorResponse(string message, ErrorType errorType, List<string>? validationErrors = null)
+    public static ApiResponse<T> ErrorResponse(string message, ErrorType errorType, Dictionary<string, string>? details = null)
     {
         return new ApiResponse<T>
         {
-            Success = false,
+            Status = "error",
             Message = message,
             ErrorType = errorType,
-            ValidationErors = validationErrors
+            Details = details
         };
     }
 }
