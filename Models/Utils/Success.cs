@@ -21,4 +21,9 @@ public static class Success
     {
         return $"{entity} has been successfully deleted";
     }
+
+    public static string ENTITY_RETRIEVED(string entity)
+    {
+        return $"{entity} has been successfully retrieved";
+    }
 }
