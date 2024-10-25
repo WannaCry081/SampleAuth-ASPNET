@@ -19,10 +19,10 @@ public class AuthService(
 ) : IAuthService
 {
     /// <summary>
-    /// Registers a new user and returns access and refresh tokens.
+    /// Registers a new user and returns the access and refresh tokens.
     /// </summary>
     /// <param name="authRegister">The user registration details</param>
-    /// <returns>An access and refresh tokens if registration is successful</returns>
+    /// <returns>The access and refresh tokens if registration is successful</returns>
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
         Dictionary<string, string> details = [];
@@ -60,6 +60,11 @@ public class AuthService(
         return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
     }
 
+    /// <summary>
+    /// Login a registerd user and returns the access and refresh tokens.
+    /// </summary>
+    /// <param name="authLogin">The user email and password</param>
+    /// <returns>The access and refresh tokens if user successfully logged in</returns>
     public async Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin)
     {
         Dictionary<string, string> details = [];
