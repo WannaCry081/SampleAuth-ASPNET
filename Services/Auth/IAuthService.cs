@@ -15,5 +15,10 @@ public interface IAuthService
     /// <returns>An access and refresh tokens if registration is successful</returns>
     Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister);
 
+    /// <summary>
+    /// Login a registerd user and returns the access and refresh tokens.
+    /// </summary>
+    /// <param name="authLogin">The user email and password</param>
+    /// <returns>The access and refresh tokens if user successfully logged in</returns>
     Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin);
 }
