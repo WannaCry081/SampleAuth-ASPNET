@@ -25,17 +25,25 @@ public class AuthService(
     /// <returns>An access and refresh tokens if registration is successful</returns>
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
+        Dictionary<string, string> details = [];
+
         if (!authRegister.Password.Equals(authRegister.RePassword))
+        {
+            details.Add("password", "Password does not match");
             return ApiResponse<AuthDto>.ErrorResponse(
-                "Passwords do not match.", Errors.ErrorType.BadRequest);
+                Error.ValidationError, Error.ErrorType.ValidationError, details);
+        }
 
         var isUserExists = await context.Users.FirstOrDefaultAsync(
             u => u.Email.Equals(authRegister.Email)
         );
 
         if (isUserExists != null)
+        {
+            details.Add("email", "Invalid email address");
             return ApiResponse<AuthDto>.ErrorResponse(
-                $"A user with this email already exists.", Errors.ErrorType.BadRequest);
+                Error.ValidationError, Error.ErrorType.ValidationError, details);
+        }
 
         var user = mapper.Map<User>(authRegister);
         user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
@@ -49,7 +57,7 @@ public class AuthService(
             Refresh = TokenUtil.GenerateRefresh(user, configuration)
         };
 
-        return ApiResponse<AuthDto>.SuccessResponse(authDto);
+        return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.USER_IS_AUTHENTICATED());
     }
 
     public async Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin)
