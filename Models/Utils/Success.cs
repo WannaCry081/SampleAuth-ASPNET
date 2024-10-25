@@ -6,4 +6,9 @@ public static class Success
     {
         return "User has been successfully logged in";
     }
+
+    public static string ENTITY_CREATED(string entity)
+    {
+        return $"{entity} has been successfully created";
+    }
 }
