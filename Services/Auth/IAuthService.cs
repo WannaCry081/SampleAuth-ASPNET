@@ -14,4 +14,6 @@ public interface IAuthService
     /// <param name="authRegister">The user registration details</param>
     /// <returns>An access and refresh tokens if registration is successful</returns>
     Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister);
+
+    Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin);
 }
