@@ -16,4 +16,9 @@ public static class Success
     {
         return $"{entity} has been successfully updated";
     }
+
+    public static string ENTITY_DELETED(string entity)
+    {
+        return $"{entity} has been successfully deleted";
+    }
 }
