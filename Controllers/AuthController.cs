@@ -43,7 +43,19 @@ public class AuthController(
         }
     }
 
+    /// <summary>
+    /// Authenticates a registered user and generates an access token.
+    /// </summary>
+    /// <param name="authLogin">The login details for the user, including email and password.</param>
+    /// <returns>A response containing the access token if authentication is successful.</returns>
+    /// <response code="200">Indicates successful login and returns an access token.</response>
+    /// <response code="400">Indicates that the login details are incorrect or missing required fields.</response>
+    /// <response code="500">Indicates an internal server error during processing.</response>
     [HttpPost("login")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> LoginUser([FromBody] AuthLoginDto authLogin)
     {
         try
