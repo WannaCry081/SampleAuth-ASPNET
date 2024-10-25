@@ -62,16 +62,24 @@ public class AuthService(
 
     public async Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin)
     {
+        Dictionary<string, string> details = [];
+
         var user = await context.Users.FirstOrDefaultAsync(
             u => u.Email.Equals(authLogin.Email));
 
         if (user == null)
+        {
+            details.Add("email", "Invalid credentials");
             return ApiResponse<AuthDto>.ErrorResponse(
-                $"user does not exists ", Errors.ErrorType.Unauthorized);
+                Error.Unauthorized, Error.ErrorType.Unauthorized, details);
+        }
 
         if (!BCrypt.Net.BCrypt.Verify(authLogin.Password, user.Password))
+        {
+            details.Add("password", "Invalid credentials");
             return ApiResponse<AuthDto>.ErrorResponse(
-                "", Errors.ErrorType.Unauthorized);
+                Error.Unauthorized, Error.ErrorType.Unauthorized, details);
+        }
 
         var authDto = new AuthDto
         {
@@ -79,6 +87,6 @@ public class AuthService(
             Refresh = TokenUtil.GenerateRefresh(user, configuration)
         };
 
-        return ApiResponse<AuthDto>.SuccessResponse(authDto);
+        return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.USER_IS_AUTHENTICATED());
     }
 }
