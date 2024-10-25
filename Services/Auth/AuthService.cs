@@ -52,4 +52,25 @@ public class AuthService(
         return ApiResponse<AuthDto>.SuccessResponse(authDto);
     }
 
+    public async Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(
+            u => u.Email.Equals(authLogin.Email));
+
+        if (user == null)
+            return ApiResponse<AuthDto>.ErrorResponse(
+                $"user does not exists ", Errors.ErrorType.Unauthorized);
+
+        if (!BCrypt.Net.BCrypt.Verify(authLogin.Password, user.Password))
+            return ApiResponse<AuthDto>.ErrorResponse(
+                "", Errors.ErrorType.Unauthorized);
+
+        var authDto = new AuthDto
+        {
+            Access = TokenUtil.GenerateAccess(user, configuration),
+            Refresh = TokenUtil.GenerateRefresh(user, configuration)
+        };
+
+        return ApiResponse<AuthDto>.SuccessResponse(authDto);
+    }
 }
