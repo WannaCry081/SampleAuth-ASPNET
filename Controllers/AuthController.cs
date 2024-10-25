@@ -42,4 +42,23 @@ public class AuthController(
             return Problem("An error occurred while processing your request.");
         }
     }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> LoginUser([FromBody] AuthLoginDto authLogin)
+    {
+        try
+        {
+            var response = await authService.LoginUserAsync(authLogin);
+
+            if (!response.Success) 
+                return ControllerUtil.GetActionResultFromError(response);
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            logger.LogCritical(ex, "Error in logging in to a user.");
+            return Problem("An error occurred while processing your request.");
+        }
+    }
 }
