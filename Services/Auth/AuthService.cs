@@ -57,7 +57,7 @@ public class AuthService(
             Refresh = TokenUtil.GenerateRefresh(user, configuration)
         };
 
-        return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.USER_IS_AUTHENTICATED());
+        return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
     }
 
     public async Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin)
@@ -87,6 +87,6 @@ public class AuthService(
             Refresh = TokenUtil.GenerateRefresh(user, configuration)
         };
 
-        return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.USER_IS_AUTHENTICATED());
+        return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
     }
 }

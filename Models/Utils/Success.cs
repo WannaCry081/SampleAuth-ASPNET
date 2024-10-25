@@ -2,9 +2,9 @@ namespace sample_auth_aspnet.Models.Utils;
 
 public static class Success
 {
-    public static string USER_IS_AUTHENTICATED()
+    public static string IS_AUTHENTICATED()
     {
-        return "User has been successfully logged in";
+        return "User has been successfully authenticated";
     }
 
     public static string ENTITY_CREATED(string entity)
