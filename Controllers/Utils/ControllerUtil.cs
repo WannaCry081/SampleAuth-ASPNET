@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using sample_auth_aspnet.Models.Response;
-using static sample_auth_aspnet.Models.Utils.Errors;
+using static sample_auth_aspnet.Models.Utils.Error;
 
 namespace sample_auth_aspnet.Controllers.Utils;
 
