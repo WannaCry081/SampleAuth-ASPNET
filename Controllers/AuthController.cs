@@ -25,6 +25,10 @@ public class AuthController(
     /// <response code="400">Returns if the model is invalid or registration failed.</response>
     /// <response code="500">Returns if an internal server error occurred.</response>
     [HttpPost("register")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RegisterUser([FromBody] AuthRegisterDto authRegister)
     {
         try
