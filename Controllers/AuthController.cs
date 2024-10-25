@@ -48,7 +48,7 @@ public class AuthController(
     }
 
     /// <summary>
-    /// Authenticates a registered user and generates an access token.
+    /// Authenticates registered user.
     /// </summary>
     /// <param name="authLogin">The login details for the user, including email and password.</param>
     /// <returns>A response containing the access token if authentication is successful.</returns>
