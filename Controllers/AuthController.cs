@@ -84,6 +84,17 @@ public class AuthController(
         }
     }
 
+    /// <summary>
+    /// Refreshes the authenticated user's access and refresh tokens.
+    /// </summary>
+    /// <param name="refreshToken">The user's refresh token used for authentication.</param>
+    /// <returns>
+    /// A response containing the new access token and refresh token if the provided refresh token is valid.
+    /// </returns>
+    /// <response code="200">Returns the new access and refresh tokens.</response>
+    /// <response code="400">Indicates that the provided refresh token is invalid or expired.</response>
+    /// <response code="401">Indicates that the user is unauthorized to refresh tokens.</response>
+    /// <response code="500">Indicates an internal server error occurred during token processing.</response>
     [Authorize]
     [HttpPost("refresh")]
     public async Task<IActionResult> RefreshUserTokens([FromBody] string refreshToken)
