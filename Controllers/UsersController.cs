@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sample_auth_aspnet.Controllers.Utils;
+using sample_auth_aspnet.Models.Dtos.Reponse;
+using sample_auth_aspnet.Models.Dtos.Users;
 using sample_auth_aspnet.Services.Users;
 
 namespace sample_auth_aspnet.Controllers;
@@ -24,6 +26,11 @@ public class UsersController(
     /// <response code="500">Returns if an internal server error occurred.</response>
     [Authorize]
     [HttpGet("me")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(SuccessResponseDto<UserDetailsDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized,
+        Type = typeof(UnauthorizedResult))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetUserDetails()
     {
         try
