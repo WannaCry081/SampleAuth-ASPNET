@@ -12,7 +12,7 @@ public class ApiResponse<T>
     public T? Data { get; init; }
 
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-    public ErrorType? ErrorType { get; init; }
+    public ErrorType? Title { get; init; }
 
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
     public Dictionary<string, string>? Details { get; init; }
@@ -33,7 +33,7 @@ public class ApiResponse<T>
         {
             Status = "error",
             Message = message,
-            ErrorType = errorType,
+            Title = errorType,
             Details = details
         };
     }
