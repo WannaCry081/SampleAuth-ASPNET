@@ -9,6 +9,7 @@ using sample_auth_aspnet.Services.Auth;
 using Newtonsoft.Json.Converters;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using sample_auth_aspnet.Services.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
     {
+        options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
         options.SerializerSettings.Converters.Add(new StringEnumConverter());
         options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
     });
