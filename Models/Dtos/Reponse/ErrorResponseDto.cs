@@ -20,7 +20,7 @@ public class ErrorResponseDto
     /// <summary>
     /// Type of error represented by the <see cref="ErrorType"/> enumeration.
     /// </summary>
-    public ErrorType? ErrorType { get; init; }
+    public ErrorType? Title { get; init; }
 
     /// <summary>
     /// Additional error details, such as validation errors, as key-value pairs.
