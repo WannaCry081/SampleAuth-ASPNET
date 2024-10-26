@@ -13,7 +13,7 @@ namespace sample_auth_aspnet.Services.Auth;
 /// Service class for authentication operation.
 /// </summary>
 public class AuthService(
-    ILogger logger,
+    ILogger<AuthService> logger,
     DataContext context,
     IMapper mapper,
     IConfiguration configuration
@@ -158,6 +158,12 @@ public class AuthService(
         var user = await context.Users.FirstOrDefaultAsync(
             u => u.Id.Equals(id));
 
+        if (user == null)
+        {
+            return ApiResponse<AuthDto>.ErrorResponse(
+                Error.NotFound, Error.ErrorType.NotFound);
+        }
+
         var expClaim = principal.Claims.FirstOrDefault(
             c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
 
@@ -168,13 +174,13 @@ public class AuthService(
 
             authDto = new AuthDto
             {
-                Access = TokenUtil.GenerateAccess(user!, configuration),
-                Refresh = TokenUtil.GenerateRefresh(user!, configuration, out string jtiValue),
+                Access = TokenUtil.GenerateAccess(user, configuration),
+                Refresh = TokenUtil.GenerateRefresh(user, configuration, out string jtiValue),
             };
 
             var newRefreshToken = new Token
             {
-                UserId = user!.Id,
+                UserId = user.Id,
                 JTI = jtiValue,
                 User = user
             };
@@ -186,7 +192,7 @@ public class AuthService(
         {
             authDto = new AuthDto
             {
-                Access = TokenUtil.GenerateAccess(user!, configuration),
+                Access = TokenUtil.GenerateAccess(user, configuration),
                 Refresh = refreshToken
             };
         }
