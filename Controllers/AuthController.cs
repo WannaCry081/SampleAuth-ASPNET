@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sample_auth_aspnet.Controllers.Utils;
 using sample_auth_aspnet.Models.Dtos.Auth;
@@ -79,6 +80,31 @@ public class AuthController(
         catch (Exception ex)
         {
             logger.LogCritical(ex, "Error in logging in to a user.");
+            return Problem("An error occurred while processing your request.");
+        }
+    }
+
+    [Authorize]
+    [HttpPost("refresh")]
+    public async Task<IActionResult> RefreshUserTokens([FromBody] string refreshToken)
+    {
+        try
+        {
+            var userId = ControllerUtil.GetUserId(User);
+
+            if (userId == -1)
+                return Unauthorized();
+
+            var response = await authService.RefreshUserTokensAsync(userId, refreshToken);
+
+            if (response.Status.Equals("error"))
+                return ControllerUtil.GetActionResultFromError(response);
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            logger.LogCritical(ex, "Error in renewing jwt tokens.");
             return Problem("An error occurred while processing your request.");
         }
     }
