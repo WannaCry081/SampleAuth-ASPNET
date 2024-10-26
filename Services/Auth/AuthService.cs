@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
 using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Entities;
@@ -90,6 +91,37 @@ public class AuthService(
         {
             Access = TokenUtil.GenerateAccess(user, configuration),
             Refresh = TokenUtil.GenerateRefresh(user, configuration)
+        };
+
+        return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
+    }
+
+
+    public async Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(int id, string refreshToken)
+    {
+        var principal = TokenUtil.ValidateRefreshToken(
+            refreshToken, configuration, out var validatedToken);
+
+        if (principal == null || validatedToken is not JwtSecurityToken jwtToken)
+        {
+            return ApiResponse<AuthDto>.ErrorResponse(
+                Error.Unauthorized, Error.ErrorType.Unauthorized);
+        }
+
+        if (jwtToken.Issuer != configuration["JWT:Issuer"] ||
+            jwtToken.Audiences.Contains(configuration["JWT:Audience"]) == false)
+        {
+            return ApiResponse<AuthDto>.ErrorResponse(
+                Error.Unauthorized, Error.ErrorType.Unauthorized);
+        }
+
+        var user = await context.Users.FirstOrDefaultAsync(
+            u => u.Id.Equals(id));
+
+        var authDto = new AuthDto
+        {
+            Access = TokenUtil.GenerateAccess(user!, configuration),
+            Refresh = TokenUtil.GenerateRefresh(user!, configuration)
         };
 
         return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
