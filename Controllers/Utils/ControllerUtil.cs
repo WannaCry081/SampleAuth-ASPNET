@@ -14,7 +14,7 @@ public static class ControllerUtil
         {
             ErrorType.NotFound => new NotFoundObjectResult(apiResponse),
             ErrorType.BadRequest => new BadRequestObjectResult(apiResponse),
-            ErrorType.Unauthorized => new UnauthorizedResult(),
+            ErrorType.Unauthorized => new UnauthorizedObjectResult(apiResponse),
             ErrorType.ValidationError => new BadRequestObjectResult(apiResponse),
             ErrorType.InternalServer => new StatusCodeResult(500),
             _ => new BadRequestObjectResult(apiResponse)
