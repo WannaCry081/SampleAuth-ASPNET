@@ -63,7 +63,6 @@ public class AuthService(
             {
                 UserId = user.Id,
                 JTI = jtiValue,
-                IsRevoked = false,
                 User = user
             };
 
@@ -113,9 +112,18 @@ public class AuthService(
         var authDto = new AuthDto
         {
             Access = TokenUtil.GenerateAccess(user, configuration),
-            Refresh = TokenUtil.GenerateRefresh(user, configuration)
+            Refresh = TokenUtil.GenerateRefresh(user, configuration, out string jtiValue)
         };
 
+        var token = new Token
+        {
+            UserId = user.Id,
+            JTI = jtiValue,
+            User = user
+        };
+
+        await context.Tokens.AddAsync(token);
+        await context.SaveChangesAsync();
         return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
     }
 
