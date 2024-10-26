@@ -10,7 +10,7 @@ public partial class DataContext
         modelBuilder.Entity<User>()
             .HasMany(u => u.Tokens)
             .WithOne(t => t.User)
-            .HasForeignKey(t => t.User.Id);
+            .HasForeignKey(t => t.UserId);
 
         modelBuilder.Entity<User>()
             .HasIndex(u => new
