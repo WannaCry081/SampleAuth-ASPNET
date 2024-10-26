@@ -21,4 +21,6 @@ public interface IAuthService
     /// <param name="authLogin">The user email and password</param>
     /// <returns>The access and refresh tokens if user successfully logged in</returns>
     Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin);
+
+    Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(int id, string refreshToken);
 }
