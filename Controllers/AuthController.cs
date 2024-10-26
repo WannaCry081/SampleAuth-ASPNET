@@ -97,6 +97,13 @@ public class AuthController(
     /// <response code="500">Indicates an internal server error occurred during token processing.</response>
     [Authorize]
     [HttpPost("refresh")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(SuccessResponseDto<AuthDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized,
+        Type = typeof(UnauthorizedResult))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized,
+        Type = typeof(ErrorResponseDto))]
     public async Task<IActionResult> RefreshUserTokens([FromBody] string refreshToken)
     {
         try
