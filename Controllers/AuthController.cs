@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using sample_auth_aspnet.Controllers.Utils;
 using sample_auth_aspnet.Models.Dtos.Auth;
+using sample_auth_aspnet.Models.Dtos.Reponse;
 using sample_auth_aspnet.Services.Auth;
 
 namespace sample_auth_aspnet.Controllers;
@@ -26,8 +27,10 @@ public class AuthController(
     /// <response code="500">Returns if an internal server error occurred.</response>
     [HttpPost("register")]
     [Consumes("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthDto))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(SuccessResponseDto<AuthDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest,
+        Type = typeof(ErrorResponseDto))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RegisterUser([FromBody] AuthRegisterDto authRegister)
     {
@@ -57,8 +60,10 @@ public class AuthController(
     /// <response code="500">Indicates an internal server error during processing.</response>
     [HttpPost("login")]
     [Consumes("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthDto))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(SuccessResponseDto<AuthDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized,
+        Type = typeof(ErrorResponseDto))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> LoginUser([FromBody] AuthLoginDto authLogin)
     {
