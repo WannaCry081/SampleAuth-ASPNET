@@ -22,5 +22,11 @@ public interface IAuthService
     /// <returns>The access and refresh tokens if user successfully logged in</returns>
     Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin);
 
+    /// <summary>
+    /// Refreshes the authenticated user's access and refresh tokens.
+    /// </summary>
+    /// <param name="id">The user ID</param>
+    /// <param name="refreshToken">The user refresh token</param>
+    /// <returns>The access and refresh tokens</returns>
     Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(int id, string refreshToken);
 }

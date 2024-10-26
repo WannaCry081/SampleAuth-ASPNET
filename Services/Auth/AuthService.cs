@@ -96,7 +96,12 @@ public class AuthService(
         return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
     }
 
-
+    /// <summary>
+    /// Refreshes the authenticated user's access and refresh tokens.
+    /// </summary>
+    /// <param name="id">The user ID</param>
+    /// <param name="refreshToken">The user refresh token</param>
+    /// <returns>The access and refresh tokens</returns>
     public async Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(int id, string refreshToken)
     {
         var principal = TokenUtil.ValidateRefreshToken(
