@@ -6,6 +6,13 @@ namespace sample_auth_aspnet.Controllers.Utils;
 
 public static class ControllerUtil
 {
+    public static int GetUserId(ClaimsPrincipal user)
+    {
+        var userIdString = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        return int.TryParse(userIdString, out var userId) ? userId : -1;
+    }
+
     public static IActionResult GetActionResultFromError<T>(ApiResponse<T> apiResponse)
     {
         var errorType = apiResponse.ErrorType;
