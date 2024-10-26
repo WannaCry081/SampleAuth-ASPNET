@@ -20,4 +20,9 @@ public static class Error
     {
         return $"{field} is required";
     }
+
+    public static string ERROR_CREATING_RESOURCE(string field)
+    {
+        return $"Error in creating {field}";
+    }
 }
