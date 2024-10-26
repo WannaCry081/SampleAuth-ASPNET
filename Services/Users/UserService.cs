@@ -17,12 +17,12 @@ public class UserService(
     /// <summary>
     /// Fetches the authenticated user's details.
     /// </summary>
-    /// <param name="userId">The user ID from the access token</param>
+    /// <param name="id">The user ID from the access token</param>
     /// <returns>The user's details of the authenticated users</returns>
-    public async Task<ApiResponse<UserDetailsDto>> GetUserDetailsAsync(int userId)
+    public async Task<ApiResponse<UserDetailsDto>> GetUserDetailsAsync(int id)
     {
         var user = await context.Users.FirstOrDefaultAsync(
-            u => u.Id.Equals(userId));
+            u => u.Id.Equals(id));
 
         var userDetails = mapper.Map<UserDetailsDto>(user);
 
