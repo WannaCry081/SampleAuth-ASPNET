@@ -3,7 +3,15 @@ using sample_auth_aspnet.Models.Response;
 
 namespace sample_auth_aspnet.Services.Users;
 
+/// <summary>
+/// Service interface for authenticated user operation
+/// </summary>
 public interface IUserService
 {
+    /// <summary>
+    /// Fetches the authenticated user's details.
+    /// </summary>
+    /// <param name="userId">The user ID from the access token</param>
+    /// <returns>The user's details of the authenticated users</returns>
     Task<ApiResponse<UserDetailsDto>> GetUserDetailsAsync(int userId);
 }
