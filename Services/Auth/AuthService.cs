@@ -7,7 +7,6 @@ using sample_auth_aspnet.Models.Entities;
 using sample_auth_aspnet.Models.Response;
 using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Utils;
-
 namespace sample_auth_aspnet.Services.Auth;
 
 /// <summary>
@@ -135,30 +134,62 @@ public class AuthService(
     /// <returns>The access and refresh tokens</returns>
     public async Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(int id, string refreshToken)
     {
-        var principal = TokenUtil.ValidateRefreshToken(
-            refreshToken, configuration, out var validatedToken);
+        var principal = TokenUtil.ValidateRefreshToken(refreshToken, configuration);
 
-        if (principal == null || validatedToken is not JwtSecurityToken jwtToken)
+        if (principal == null)
         {
             return ApiResponse<AuthDto>.ErrorResponse(
                 Error.Unauthorized, Error.ErrorType.Unauthorized);
         }
 
-        if (jwtToken.Issuer != configuration["JWT:Issuer"] ||
-            jwtToken.Audiences.Contains(configuration["JWT:Audience"]) == false)
+        var jti = principal.Claims.FirstOrDefault(
+            c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
+
+        var token = await context.Tokens.FirstOrDefaultAsync(
+            t => t.JTI.Equals(jti));
+
+        if (!(token != null && !token.IsRevoked))
         {
             return ApiResponse<AuthDto>.ErrorResponse(
                 Error.Unauthorized, Error.ErrorType.Unauthorized);
         }
 
+        var authDto = new AuthDto { };
         var user = await context.Users.FirstOrDefaultAsync(
             u => u.Id.Equals(id));
 
-        var authDto = new AuthDto
+        var expClaim = principal.Claims.FirstOrDefault(
+            c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
+
+        if (DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim!)).UtcDateTime
+            < DateTime.UtcNow.AddMinutes(10))
         {
-            Access = TokenUtil.GenerateAccess(user!, configuration),
-            Refresh = TokenUtil.GenerateRefresh(user!, configuration)
-        };
+            token.IsRevoked = true;
+
+            authDto = new AuthDto
+            {
+                Access = TokenUtil.GenerateAccess(user!, configuration),
+                Refresh = TokenUtil.GenerateRefresh(user!, configuration, out string jtiValue),
+            };
+
+            var newRefreshToken = new Token
+            {
+                UserId = user!.Id,
+                JTI = jtiValue,
+                User = user
+            };
+
+            await context.Tokens.AddAsync(newRefreshToken);
+            await context.SaveChangesAsync();
+        }
+        else
+        {
+            authDto = new AuthDto
+            {
+                Access = TokenUtil.GenerateAccess(user!, configuration),
+                Refresh = refreshToken
+            };
+        }
 
         return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
     }
