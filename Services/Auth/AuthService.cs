@@ -14,6 +14,7 @@ namespace sample_auth_aspnet.Services.Auth;
 /// Service class for authentication operation.
 /// </summary>
 public class AuthService(
+    ILogger logger,
     DataContext context,
     IMapper mapper,
     IConfiguration configuration
@@ -27,38 +28,60 @@ public class AuthService(
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
         Dictionary<string, string> details = [];
-
-        if (!authRegister.Password.Equals(authRegister.RePassword))
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
         {
-            details.Add("password", "Password does not match");
-            return ApiResponse<AuthDto>.ErrorResponse(
-                Error.ValidationError, Error.ErrorType.ValidationError, details);
+            if (!authRegister.Password.Equals(authRegister.RePassword))
+            {
+                details.Add("password", "Password does not match");
+                return ApiResponse<AuthDto>.ErrorResponse(
+                    Error.ValidationError, Error.ErrorType.ValidationError, details);
+            }
+
+            var isUserExists = await context.Users.FirstOrDefaultAsync(
+                u => u.Email.Equals(authRegister.Email)
+            );
+
+            if (isUserExists != null)
+            {
+                details.Add("email", "Invalid email address");
+                return ApiResponse<AuthDto>.ErrorResponse(
+                    Error.ValidationError, Error.ErrorType.ValidationError, details);
+            }
+
+            var user = mapper.Map<User>(authRegister);
+            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+            await context.Users.AddAsync(user);
+
+            var authDto = new AuthDto
+            {
+                Access = TokenUtil.GenerateAccess(user, configuration),
+                Refresh = TokenUtil.GenerateRefresh(user, configuration, out string jtiValue)
+            };
+
+            var token = new Token
+            {
+                UserId = user.Id,
+                JTI = jtiValue,
+                IsRevoked = false,
+                User = user
+            };
+
+            user.Tokens.Add(token);
+
+            await context.Tokens.AddAsync(token);
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
         }
-
-        var isUserExists = await context.Users.FirstOrDefaultAsync(
-            u => u.Email.Equals(authRegister.Email)
-        );
-
-        if (isUserExists != null)
+        catch (Exception ex)
         {
-            details.Add("email", "Invalid email address");
+            await transaction.RollbackAsync();
+            logger.LogError(ex, "Error in registering a new user.");
             return ApiResponse<AuthDto>.ErrorResponse(
-                Error.ValidationError, Error.ErrorType.ValidationError, details);
+                Error.ERROR_CREATING_RESOURCE("User"), Error.ErrorType.InternalServer);
         }
-
-        var user = mapper.Map<User>(authRegister);
-        user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-
-        await context.Users.AddAsync(user);
-        await context.SaveChangesAsync();
-
-        var authDto = new AuthDto
-        {
-            Access = TokenUtil.GenerateAccess(user, configuration),
-            Refresh = TokenUtil.GenerateRefresh(user, configuration)
-        };
-
-        return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
     }
 
     /// <summary>
