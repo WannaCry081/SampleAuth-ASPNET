@@ -8,8 +8,23 @@ namespace sample_auth_aspnet.Services.Utils;
 
 public static class TokenUtil
 {
-    private static string GenerateToken(List<Claim> claims, DateTime expires, IConfiguration configuration)
+    private static string GenerateToken(User user, DateTime expires, IConfiguration configuration, bool isAccessToken = true)
     {
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(
+                DateTime.UtcNow).ToUnixTimeSeconds().ToString(),
+                ClaimValueTypes.Integer64),
+        };
+
+        if (isAccessToken)
+        {
+            claims.Add(new(ClaimTypes.Email, user.Email));
+            claims.Add(new(ClaimTypes.NameIdentifier, user.Id.ToString()));
+        }
+
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -26,39 +41,18 @@ public static class TokenUtil
 
     public static string GenerateAccess(User user, IConfiguration configuration)
     {
-        var claims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(
-                DateTime.UtcNow).ToUnixTimeSeconds().ToString(),
-                ClaimValueTypes.Integer64),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.NameIdentifier, user.Id.ToString())
-        };
-
         var expiry = DateTime.UtcNow.AddHours(
             Convert.ToDouble(configuration["JWT:AccessTokenExpiry"]));
 
-        return GenerateToken(claims, expiry, configuration);
+        return GenerateToken(user, expiry, configuration);
     }
 
-    public static string GenerateRefresh(User user, IConfiguration configuration, out string jtiValue)
+    public static string GenerateRefresh(User user, IConfiguration configuration)
     {
-        jtiValue = Guid.NewGuid().ToString();
-        var claims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Jti, jtiValue),
-            new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(
-                DateTime.UtcNow).ToUnixTimeSeconds().ToString(),
-                ClaimValueTypes.Integer64),
-        };
-
         var expiry = DateTime.UtcNow.AddDays(
             Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]));
 
-        return GenerateToken(claims, expiry, configuration);
+        return GenerateToken(user, expiry, configuration, isAccessToken: false);
     }
 
     public static ClaimsPrincipal? ValidateRefreshToken(string refreshToken, IConfiguration configuration)
