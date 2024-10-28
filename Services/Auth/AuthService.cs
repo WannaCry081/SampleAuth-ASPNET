@@ -55,13 +55,13 @@ public class AuthService(
             var authDto = new AuthDto
             {
                 Access = TokenUtil.GenerateAccess(user, configuration),
-                Refresh = TokenUtil.GenerateRefresh(user, configuration, out string jtiValue)
+                Refresh = TokenUtil.GenerateRefresh(user, configuration)
             };
 
             var token = new Token
             {
                 UserId = user.Id,
-                JTI = jtiValue,
+                Refresh = authDto.Refresh,
                 User = user
             };
 
@@ -111,13 +111,13 @@ public class AuthService(
         var authDto = new AuthDto
         {
             Access = TokenUtil.GenerateAccess(user, configuration),
-            Refresh = TokenUtil.GenerateRefresh(user, configuration, out string jtiValue)
+            Refresh = TokenUtil.GenerateRefresh(user, configuration)
         };
 
         var token = new Token
         {
             UserId = user.Id,
-            JTI = jtiValue,
+            Refresh = authDto.Refresh,
             User = user
         };
 
@@ -142,11 +142,8 @@ public class AuthService(
                 Error.Unauthorized, Error.ErrorType.Unauthorized);
         }
 
-        var jti = principal.Claims.FirstOrDefault(
-            c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
-
         var token = await context.Tokens.FirstOrDefaultAsync(
-            t => t.JTI.Equals(jti));
+            t => t.Refresh.Equals(refreshToken));
 
         if (!(token != null && !token.IsRevoked))
         {
@@ -175,13 +172,13 @@ public class AuthService(
             authDto = new AuthDto
             {
                 Access = TokenUtil.GenerateAccess(user, configuration),
-                Refresh = TokenUtil.GenerateRefresh(user, configuration, out string jtiValue),
+                Refresh = TokenUtil.GenerateRefresh(user, configuration),
             };
 
             var newRefreshToken = new Token
             {
                 UserId = user.Id,
-                JTI = jtiValue,
+                Refresh = authDto.Refresh,
                 User = user
             };
 
