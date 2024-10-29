@@ -15,12 +15,17 @@ public class UsersController(
     IUserService userService) : ControllerBase
 {
     /// <summary>
-    /// Fetches the authenticated user's details.
+    ///     Fetches the authenticated user's details.
     /// </summary>
-    /// <returns>An <see cref="IActionResult"/> indicating the result of retrieving user's details.</returns>
-    /// <response code="200">Returns if fetching user's details was successful.</response>
-    /// <response code="401">Returns if the model is not authenticated.</response>
-    /// <response code="500">Returns if an internal server error occurred.</response>
+    /// <returns>
+    ///     Returns an <see cref="IActionResult"/> containing:
+    ///     - <see cref="OkObjectResult"/> with the user's details.
+    ///     - <see cref="UnauthorizedObjectResult"/> if the request is invalid.
+    ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
+    /// </returns>
+    /// <response code="200">Returns the user's details.</response>
+    /// <response code="401">Unauthorized access.</response>
+    /// <response code="500">Internal server error.</response>
     [Authorize]
     [HttpGet("me")]
     [ProducesResponseType(StatusCodes.Status200OK,
