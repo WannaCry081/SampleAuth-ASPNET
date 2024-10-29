@@ -3,9 +3,6 @@ using sample_auth_aspnet.Models.Response;
 
 namespace sample_auth_aspnet.Services.Auth;
 
-/// <summary>
-/// Service interface for authentication operation.
-/// </summary>
 public interface IAuthService
 {
     /// <summary>
