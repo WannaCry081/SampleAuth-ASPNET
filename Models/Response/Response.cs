@@ -5,8 +5,8 @@ namespace sample_auth_aspnet.Models.Response;
 
 public class ApiResponse<T>
 {
-    public string Status { get; init; }
-    public string Message { get; init; }
+    public string Status { get; init; } = null!;
+    public string Message { get; init; } = null!;
 
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
     public T? Data { get; init; }
