@@ -114,6 +114,7 @@ public class AuthController(
         try
         {
             var userId = ControllerUtil.GetUserId(User);
+            logger.LogInformation("User logout attempt for userId: {UserId}", userId);
 
             if (userId == -1)
                 return Unauthorized();
@@ -121,8 +122,12 @@ public class AuthController(
             var response = await authService.LogoutUserAsync(refreshToken);
 
             if (!response)
+            {
+                logger.LogWarning("Logout failed for userId: {UserId}. Invalid refresh token.", userId);
                 return BadRequest();
+            }
 
+            logger.LogInformation("User successfully logged out for userId: {UserId}", userId);
             return NoContent();
         }
         catch (Exception ex)
