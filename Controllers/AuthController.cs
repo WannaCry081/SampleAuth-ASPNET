@@ -177,7 +177,7 @@ public class AuthController(
             if (userId == -1)
                 return Unauthorized();
 
-            var response = await authService.RefreshUserTokensAsync(userId, refreshToken);
+            var response = await authService.RefreshUserTokensAsync(refreshToken);
             if (response.Status.Equals("error"))
             {
                 logger.LogWarning("Token refresh failed for userId: {UserId}.", userId);
