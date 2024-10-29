@@ -7,9 +7,6 @@ using sample_auth_aspnet.Services.Users;
 
 namespace sample_auth_aspnet.Controllers;
 
-/// <summary>
-/// Controller for handling authenticated users.
-/// </summary>
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/users")]
