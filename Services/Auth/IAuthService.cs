@@ -24,10 +24,12 @@ public interface IAuthService
     Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin);
 
     /// <summary>
-    /// Logout a user by invalidating their refresh token.
+    ///     Logout a user by invalidating their refresh token.
     /// </summary>
-    /// <param name="refreshToken">The user refresh token</param>
-    /// <returns>Return a boolean if the process is successful</returns>
+    /// <param name="refreshToken"></param>
+    /// <returns>
+    ///     Return a boolean if the process is successful.
+    /// </returns>
     Task<bool> LogoutUserAsync(string refreshToken);
 
     /// <summary>
