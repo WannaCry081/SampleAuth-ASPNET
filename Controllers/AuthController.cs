@@ -162,15 +162,19 @@ public class AuthController(
         try
         {
             var userId = ControllerUtil.GetUserId(User);
+            logger.LogInformation("User token refresh attempt for userId: {UserId}", userId);
 
             if (userId == -1)
                 return Unauthorized();
 
             var response = await authService.RefreshUserTokensAsync(userId, refreshToken);
-
             if (response.Status.Equals("error"))
+            {
+                logger.LogWarning("Token refresh failed for userId: {UserId}.", userId);
                 return ControllerUtil.GetActionResultFromError(response);
+            }
 
+            logger.LogInformation("Tokens refreshed successfully for userId: {UserId}", userId);
             return Ok(response);
         }
         catch (Exception ex)
