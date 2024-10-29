@@ -21,7 +21,7 @@ public class AuthController(
     /// <returns>
     ///     Returns an <see cref="IActionResult"/> containing:
     ///     - <see cref="StatusCodeResult" /> with the access and refresh tokens.
-    ///     - <see cref="UnauthorizedObjectResult"/> if the user entered invalid credentials.
+    ///     - <see cref="BadRequestObjectResult"/> if the request is invalid.
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
     /// <response code="201">Returns the access and refresh tokens.</response>
