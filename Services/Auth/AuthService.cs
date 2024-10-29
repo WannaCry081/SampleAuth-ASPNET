@@ -9,9 +9,6 @@ using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Utils;
 namespace sample_auth_aspnet.Services.Auth;
 
-/// <summary>
-/// Service class for authentication operation.
-/// </summary>
 public class AuthService(
     ILogger<AuthService> logger,
     DataContext context,
@@ -19,11 +16,6 @@ public class AuthService(
     IConfiguration configuration
 ) : IAuthService
 {
-    /// <summary>
-    /// Registers a new user and returns the access and refresh tokens.
-    /// </summary>
-    /// <param name="authRegister">The user registration details</param>
-    /// <returns>The access and refresh tokens if registration is successful</returns>
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
         Dictionary<string, string> details = [];
@@ -50,7 +42,7 @@ public class AuthService(
 
             var user = mapper.Map<User>(authRegister);
             user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-            
+
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
 
@@ -84,11 +76,6 @@ public class AuthService(
         }
     }
 
-    /// <summary>
-    /// Login a registerd user and returns the access and refresh tokens.
-    /// </summary>
-    /// <param name="authLogin">The user email and password</param>
-    /// <returns>The access and refresh tokens if user successfully logged in</returns>
     public async Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin)
     {
         Dictionary<string, string> details = [];
@@ -142,12 +129,6 @@ public class AuthService(
         return true;
     }
 
-    /// <summary>
-    /// Refreshes the authenticated user's access and refresh tokens.
-    /// </summary>
-    /// <param name="id">The user ID</param>
-    /// <param name="refreshToken">The user refresh token</param>
-    /// <returns>The access and refresh tokens</returns>
     public async Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(int id, string refreshToken)
     {
         var principal = TokenUtil.ValidateRefreshToken(refreshToken, configuration);
