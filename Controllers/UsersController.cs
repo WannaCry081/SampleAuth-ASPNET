@@ -36,12 +36,17 @@ public class UsersController(
         try
         {
             var userId = ControllerUtil.GetUserId(User);
+            logger.LogInformation("User details fetch attempt for userId: {UserId}", userId);
 
             if (userId == -1)
+            {
+                logger.LogWarning("Unauthorized access attempt for userId: {UserId}", userId);
                 return Unauthorized();
+            }
 
             var response = await userService.GetUserDetailsAsync(userId);
 
+            logger.LogInformation("Successfully fetched user details for userId: {UserId}", userId);
             return Ok(response);
         }
         catch (Exception ex)
