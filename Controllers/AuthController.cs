@@ -59,15 +59,21 @@ public class AuthController(
     }
 
     /// <summary>
-    /// Authenticates registered user.
+    ///     Authenticates registered user.
     /// </summary>
-    /// <param name="authLogin">The login details for the user, including email and password.</param>
-    /// <returns>A response containing the access token if authentication is successful.</returns>
-    /// <response code="200">Indicates successful login and returns an access token.</response>
-    /// <response code="400">Indicates that the login details are incorrect or missing required fields.</response>
-    /// <response code="500">Indicates an internal server error during processing.</response>
+    /// <param name="authLogin"></param>
+    /// <returns>
+    ///     Returns an <see cref="IActionResult"/> containing:
+    ///     - <see cref="OkObjectResult"/> with the access and refresh tokens.
+    ///     - <see cref="UnauthorizedObjectResult"/> if the user entered invalid credentials.
+    ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
+    /// </returns>
+    /// <response code="200">Returns the access and refresh tokens.</response>
+    /// <response code="401">Unauthorized access.</response>
+    /// <response code="500">Internal server error.</response>
     [HttpPost("login")]
     [Consumes("application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(SuccessResponseDto<AuthDto>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized,
