@@ -146,16 +146,18 @@ public class AuthController(
     }
 
     /// <summary>
-    /// Refreshes the authenticated user's access and refresh tokens.
+    ///     Refreshes the authenticated user's tokens.
     /// </summary>
-    /// <param name="refreshToken">The user's refresh token used for authentication.</param>
+    /// <param name="refreshToken"></param>
     /// <returns>
-    /// A response containing the new access token and refresh token if the provided refresh token is valid.
+    ///     Returns an <see cref="IActionResult"/> containing:
+    ///     - <see cref="OkObjectResult"/> if the request is valid.
+    ///     - <see cref="UnauthorizedObjectResult"/> if an the credential is invalid.
+    ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
     /// <response code="200">Returns the new access and refresh tokens.</response>
-    /// <response code="400">Indicates that the provided refresh token is invalid or expired.</response>
-    /// <response code="401">Indicates that the user is unauthorized to refresh tokens.</response>
-    /// <response code="500">Indicates an internal server error occurred during token processing.</response>
+    /// <response code="401">Unauthorized access.</response>
+    /// <response code="500">Internal server error.</response>
     [Authorize]
     [HttpPost("refresh")]
     [Consumes("application/json")]
