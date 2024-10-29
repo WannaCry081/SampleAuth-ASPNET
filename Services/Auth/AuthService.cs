@@ -129,7 +129,7 @@ public class AuthService(
         return true;
     }
 
-    public async Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(int id, string refreshToken)
+    public async Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(string refreshToken)
     {
         var principal = TokenUtil.ValidateRefreshToken(refreshToken, configuration);
 
@@ -139,7 +139,9 @@ public class AuthService(
                 Error.Unauthorized, Error.ErrorType.Unauthorized);
         }
 
-        var token = await context.Tokens.FirstOrDefaultAsync(
+        var token = await context.Tokens
+            .Include(t => t.User)
+            .FirstOrDefaultAsync(
             t => t.Refresh.Equals(refreshToken));
 
         if (!(token != null && !token.IsRevoked))
@@ -148,16 +150,8 @@ public class AuthService(
                 Error.Unauthorized, Error.ErrorType.Unauthorized);
         }
 
+        var user = token.User;
         var authDto = new AuthDto { };
-        var user = await context.Users.FirstOrDefaultAsync(
-            u => u.Id.Equals(id));
-
-        if (user == null)
-        {
-            return ApiResponse<AuthDto>.ErrorResponse(
-                Error.NotFound, Error.ErrorType.NotFound);
-        }
-
         var expClaim = principal.Claims.FirstOrDefault(
             c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
 
