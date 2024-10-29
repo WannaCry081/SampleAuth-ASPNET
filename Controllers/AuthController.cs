@@ -14,18 +14,23 @@ public class AuthController(
     ILogger<AuthController> logger,
     IAuthService authService) : ControllerBase
 {
-
     /// <summary>
-    /// Registers a new user.
+    ///     Registers a new user.
     /// </summary>
-    /// <param name="authRegister">The registration details for the user.</param>
-    /// <returns>An <see cref="IActionResult"/> indicating the result of the registration process.</returns>
-    /// <response code="200">Returns if the registration was successful.</response>
-    /// <response code="400">Returns if the model is invalid or registration failed.</response>
-    /// <response code="500">Returns if an internal server error occurred.</response>
+    /// <param name="authRegister"></param>
+    /// <returns>
+    ///     Returns an <see cref="IActionResult"/> containing:
+    ///     - <see cref="StatusCodeResult" /> with the access and refresh tokens.
+    ///     - <see cref="UnauthorizedObjectResult"/> if the user entered invalid credentials.
+    ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
+    /// </returns>
+    /// <response code="201">Returns the access and refresh tokens.</response>
+    /// <response code="404">Unauthorized access.</response>
+    /// <response code="500">Internal server error.</response>
     [HttpPost("register")]
     [Consumes("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK,
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status201Created,
         Type = typeof(SuccessResponseDto<AuthDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest,
         Type = typeof(ErrorResponseDto))]
@@ -44,7 +49,7 @@ public class AuthController(
             }
 
             logger.LogInformation("User registration successful for email: {Email}", authRegister.Email);
-            return Ok(response);
+            return StatusCode(201, response);
         }
         catch (Exception ex)
         {
