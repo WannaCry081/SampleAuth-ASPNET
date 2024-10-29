@@ -75,16 +75,21 @@ public class AuthController(
     {
         try
         {
+            logger.LogInformation("User login attempt for email: {Email}", authLogin.Email);
             var response = await authService.LoginUserAsync(authLogin);
 
             if (response.Status.Equals("error"))
+            {
+                logger.LogWarning("User login failed for email: {Email}.", authLogin.Email);
                 return ControllerUtil.GetActionResultFromError(response);
+            }
 
+            logger.LogInformation("User login successful for email: {Email}", authLogin.Email);
             return Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error in logging in to a user.");
+            logger.LogCritical(ex, "Error in logging in user for email: {Email}", authLogin.Email);
             return Problem("An error occurred while processing your request.");
         }
     }
