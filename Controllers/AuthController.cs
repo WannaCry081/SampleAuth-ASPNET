@@ -103,18 +103,18 @@ public class AuthController(
     }
 
     /// <summary>
-    /// Blacklist refresh token of the authenticated user.
+    ///     Blacklist refresh token of the authenticated user.
     /// </summary>
-    /// <remarks>
-    /// This endpoint invalidates the refresh token associated with the logged-in user,
-    /// effectively logging them out of the application.
-    /// </remarks>
-    /// <param name="refreshToken">The user's refresh token used for authentication.</param>
-    /// <returns>NoContent if successful, Unauthorized if user is not authenticated, 
-    /// BadRequest if the refresh token is invalid or not found.</returns>
-    /// <response code="204">No Content - Logout successful.</response>
-    /// <response code="400">Bad Request - Invalid refresh token.</response>
-    /// <response code="401">Unauthorized - User not authenticated.</response>
+    /// <param name="refreshToken"></param>
+    /// <returns> 
+    ///     Returns an <see cref="IActionResult"/> containing:
+    ///     - <see cref="NoContentResult"/>if the request is valid.
+    ///     - <see cref="UnauthorizedObjectResult"/> if an the credential is invalid.
+    ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
+    /// </returns>
+    /// <response code="204">No content.</response>
+    /// <response code="401">Unauthorized access.</response>
+    /// <response code="500">Internal server error.</response>
     [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> LogoutUser([FromBody] string refreshToken)
