@@ -37,16 +37,21 @@ public class AuthController(
     {
         try
         {
+            logger.LogInformation("User registration attempt for email: {Email}", authRegister.Email);
             var response = await authService.RegisterUserAsync(authRegister);
 
             if (response.Status.Equals("error"))
+            {
+                logger.LogWarning("User registration failed for email: {Email}.", authRegister.Email);
                 return ControllerUtil.GetActionResultFromError(response);
+            }
 
+            logger.LogInformation("User registration successful for email: {Email}", authRegister.Email);
             return Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error in registering user details.");
+            logger.LogCritical(ex, "Error in registering user details for email: {Email}", authRegister.Email);
             return Problem("An error occurred while processing your request.");
         }
     }
