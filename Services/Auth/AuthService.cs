@@ -50,7 +50,9 @@ public class AuthService(
 
             var user = mapper.Map<User>(authRegister);
             user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+            
             await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
 
             var authDto = new AuthDto
             {
@@ -124,6 +126,20 @@ public class AuthService(
         await context.Tokens.AddAsync(token);
         await context.SaveChangesAsync();
         return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
+    }
+
+    public async Task<bool> LogoutUserAsync(string refreshToken)
+    {
+        var token = await context.Tokens.FirstOrDefaultAsync(
+            t => t.Refresh.Equals(refreshToken));
+
+        if (token is null)
+            return false;
+
+        token.IsRevoked = true;
+        await context.SaveChangesAsync();
+
+        return true;
     }
 
     /// <summary>
