@@ -115,7 +115,6 @@ public class AuthController(
     /// <response code="204">No content.</response>
     /// <response code="401">Unauthorized access.</response>
     /// <response code="500">Internal server error.</response>
-    [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> LogoutUser([FromBody] string refreshToken)
     {
@@ -158,7 +157,6 @@ public class AuthController(
     /// <response code="200">Returns the new access and refresh tokens.</response>
     /// <response code="401">Unauthorized access.</response>
     /// <response code="500">Internal server error.</response>
-    [Authorize]
     [HttpPost("refresh")]
     [Consumes("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK,
