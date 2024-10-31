@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using sample_auth_aspnet.Models.Entities;
 using System.IdentityModel.Tokens.Jwt;
+using sample_auth_aspnet.Models.Dtos.Auth;
 
 namespace sample_auth_aspnet.Services.Utils;
 
@@ -53,6 +54,15 @@ public static class TokenUtil
             Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]));
 
         return GenerateToken(user, expiry, configuration, isAccessToken: false);
+    }
+
+    public static AuthDto GenerateTokens(User user, IConfiguration configuration)
+    {
+        return new AuthDto
+        {
+            Access = GenerateAccess(user, configuration),
+            Refresh = GenerateRefresh(user, configuration)
+        };
     }
 
     public static ClaimsPrincipal? ValidateRefreshToken(string refreshToken, IConfiguration configuration)
