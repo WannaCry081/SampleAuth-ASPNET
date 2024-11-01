@@ -2,28 +2,26 @@ namespace sample_auth_aspnet.Models.Utils;
 
 public static class Success
 {
-    public static string IS_AUTHENTICATED()
-    {
-        return "User has been successfully authenticated";
-    }
+    public const string IS_AUTHENTICATED = "User is successfully authenticated.";
+
 
     public static string ENTITY_CREATED(string entity)
     {
-        return $"{entity} has been successfully created";
+        return $"{entity} is successfully created.";
     }
 
     public static string ENTITY_UPDATED(string entity)
     {
-        return $"{entity} has been successfully updated";
+        return $"{entity} is successfully updated.";
     }
 
     public static string ENTITY_DELETED(string entity)
     {
-        return $"{entity} has been successfully deleted";
+        return $"{entity} is successfully deleted.";
     }
 
     public static string ENTITY_RETRIEVED(string entity)
     {
-        return $"{entity} has been successfully retrieved";
+        return $"{entity} is successfully retrieved.";
     }
 }
