@@ -112,17 +112,20 @@ public class AuthService(
         var token = await context.Tokens.FirstOrDefaultAsync(
             t => t.Refresh.Equals(refreshToken));
 
-        if (token is null || token.Expiration < DateTime.UtcNow)
+        if (token is null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
             return false;
+
+        token.IsRevoked = true;
+        await context.SaveChangesAsync();
 
         return true;
     }
 
     public async Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(string refreshToken)
     {
-        Dictionary<string, string> details = [];
-        var principal = TokenUtil.ValidateRefreshToken(refreshToken, configuration);
+        var details = new Dictionary<string, string>();
 
+        var principal = TokenUtil.ValidateRefreshToken(refreshToken, configuration);
         if (principal == null)
         {
             details.Add("token", "Invalid refresh token.");
@@ -132,39 +135,38 @@ public class AuthService(
 
         var token = await context.Tokens
             .Include(t => t.User)
-            .FirstOrDefaultAsync(
-            t => t.Refresh.Equals(refreshToken));
+            .FirstOrDefaultAsync(t => t.Refresh == refreshToken);
 
-        if (token is null || token.Expiration < DateTime.UtcNow)
+        if (token == null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
         {
-            details.Add("token", "refresh token is already expired.");
+            details.Add("token", "Refresh token is already expired or invalid.");
             return ApiResponse<AuthDto>.ErrorResponse(
                 Error.Unauthorized, Error.ErrorType.Unauthorized, details);
         }
 
-        var expClaim = principal.Claims.FirstOrDefault(
-            c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
-
-        if (DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim!)).UtcDateTime
-            < DateTime.UtcNow.AddMinutes(10))
+        var expClaim = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
+        if (string.IsNullOrEmpty(expClaim) ||
+            !long.TryParse(expClaim, out var expSeconds) ||
+            DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime < DateTime.UtcNow.AddMinutes(10))
         {
             var user = token.User;
             var newTokensGenerated = TokenUtil.GenerateTokens(user, configuration);
+
+            token.IsRevoked = true;
 
             var newRefreshToken = new Token
             {
                 UserId = user.Id,
                 Refresh = newTokensGenerated.Refresh,
-                User = user,
-                Expiration = DateTime.UtcNow.AddDays(
-                    Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]))
+                Expiration = DateTime.UtcNow.AddDays(Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]))
             };
 
+            user.Tokens.Add(newRefreshToken);
             await context.Tokens.AddAsync(newRefreshToken);
             await context.SaveChangesAsync();
 
             return ApiResponse<AuthDto>.SuccessResponse(
-            newTokensGenerated, Success.IS_AUTHENTICATED);
+                newTokensGenerated, Success.IS_AUTHENTICATED);
         }
 
         var newAccessToken = new AuthDto
