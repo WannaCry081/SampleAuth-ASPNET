@@ -108,11 +108,8 @@ public class AuthService(
         var token = await context.Tokens.FirstOrDefaultAsync(
             t => t.Refresh.Equals(refreshToken));
 
-        if (token is null)
+        if (token is null || token.Expiration < DateTime.UtcNow)
             return false;
-
-        token.IsRevoked = true;
-        await context.SaveChangesAsync();
 
         return true;
     }
