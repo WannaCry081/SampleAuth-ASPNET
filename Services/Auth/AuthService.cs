@@ -24,33 +24,25 @@ public class AuthService(
         {
             if (!authRegister.Password.Equals(authRegister.RePassword))
             {
-                details.Add("password", "Password does not match");
+                details.Add("rePassword", "Passwords do not match.");
                 return ApiResponse<AuthDto>.ErrorResponse(
                     Error.ValidationError, Error.ErrorType.ValidationError, details);
             }
 
-            var isUserExists = await context.Users.FirstOrDefaultAsync(
-                u => u.Email.Equals(authRegister.Email)
-            );
-
-            if (isUserExists != null)
+            if (await context.Users.AnyAsync(u => u.Email.Equals(authRegister.Email)))
             {
-                details.Add("email", "Invalid email address");
+                details.Add("email", "Invalid email address.");
                 return ApiResponse<AuthDto>.ErrorResponse(
                     Error.ValidationError, Error.ErrorType.ValidationError, details);
             }
 
             var user = mapper.Map<User>(authRegister);
-            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+            user.Password = PasswordUtil.HashPassword(user.Password);
 
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
 
-            var authDto = new AuthDto
-            {
-                Access = TokenUtil.GenerateAccess(user, configuration),
-                Refresh = TokenUtil.GenerateRefresh(user, configuration)
-            };
+            var authDto = TokenUtil.GenerateTokens(user, configuration);
 
             var token = new Token
             {
@@ -60,12 +52,12 @@ public class AuthService(
             };
 
             user.Tokens.Add(token);
-
             await context.Tokens.AddAsync(token);
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
+            return ApiResponse<AuthDto>.SuccessResponse(
+                authDto, Success.IS_AUTHENTICATED);
         }
         catch (Exception ex)
         {
