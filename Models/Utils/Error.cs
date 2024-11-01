@@ -18,11 +18,11 @@ public static class Error
 
     public static string FIELD_IS_REQUIRED(string field)
     {
-        return $"{field} is required";
+        return $"{field} is required.";
     }
 
     public static string ERROR_CREATING_RESOURCE(string field)
     {
-        return $"Error in creating {field}";
+        return $"Error in creating {field}.";
     }
 }
