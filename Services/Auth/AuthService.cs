@@ -48,7 +48,9 @@ public class AuthService(
             {
                 UserId = user.Id,
                 Refresh = authDto.Refresh,
-                User = user
+                User = user,
+                Expiration = DateTime.UtcNow.AddDays(
+                    Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]))
             };
 
             user.Tokens.Add(token);
@@ -94,7 +96,9 @@ public class AuthService(
         {
             UserId = user.Id,
             Refresh = authDto.Refresh,
-            User = user
+            User = user,
+            Expiration = DateTime.UtcNow.AddDays(
+                Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]))
         };
 
         await context.Tokens.AddAsync(token);
@@ -131,49 +135,45 @@ public class AuthService(
             .FirstOrDefaultAsync(
             t => t.Refresh.Equals(refreshToken));
 
-        if (!(token != null && !token.IsRevoked))
+        if (token is null || token.Expiration < DateTime.UtcNow)
         {
             details.Add("token", "refresh token is already expired.");
             return ApiResponse<AuthDto>.ErrorResponse(
                 Error.Unauthorized, Error.ErrorType.Unauthorized, details);
         }
 
-        var user = token.User;
-        var authDto = new AuthDto { };
         var expClaim = principal.Claims.FirstOrDefault(
             c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
 
         if (DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim!)).UtcDateTime
             < DateTime.UtcNow.AddMinutes(10))
         {
-            token.IsRevoked = true;
-
-            authDto = new AuthDto
-            {
-                Access = TokenUtil.GenerateAccess(user, configuration),
-                Refresh = TokenUtil.GenerateRefresh(user, configuration),
-            };
+            var user = token.User;
+            var newTokensGenerated = TokenUtil.GenerateTokens(user, configuration);
 
             var newRefreshToken = new Token
             {
                 UserId = user.Id,
-                Refresh = authDto.Refresh,
-                User = user
+                Refresh = newTokensGenerated.Refresh,
+                User = user,
+                Expiration = DateTime.UtcNow.AddDays(
+                    Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]))
             };
 
             await context.Tokens.AddAsync(newRefreshToken);
             await context.SaveChangesAsync();
-        }
-        else
-        {
-            authDto = new AuthDto
-            {
-                Access = TokenUtil.GenerateAccess(user, configuration),
-                Refresh = refreshToken
-            };
+
+            return ApiResponse<AuthDto>.SuccessResponse(
+            newTokensGenerated, Success.IS_AUTHENTICATED);
         }
 
+        var newAccessToken = new AuthDto
+        {
+            Access = TokenUtil.GenerateAccess(token.User, configuration),
+            Refresh = refreshToken
+        };
+
         return ApiResponse<AuthDto>.SuccessResponse(
-            authDto, Success.IS_AUTHENTICATED);
+            newAccessToken, Success.IS_AUTHENTICATED);
     }
 }
