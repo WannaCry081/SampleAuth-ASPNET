@@ -119,12 +119,14 @@ public class AuthService(
 
     public async Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(string refreshToken)
     {
+        Dictionary<string, string> details = [];
         var principal = TokenUtil.ValidateRefreshToken(refreshToken, configuration);
 
         if (principal == null)
         {
+            details.Add("token", "Invalid refresh token.");
             return ApiResponse<AuthDto>.ErrorResponse(
-                Error.Unauthorized, Error.ErrorType.Unauthorized);
+                Error.Unauthorized, Error.ErrorType.Unauthorized, details);
         }
 
         var token = await context.Tokens
@@ -134,8 +136,9 @@ public class AuthService(
 
         if (!(token != null && !token.IsRevoked))
         {
+            details.Add("token", "refresh token is already expired.");
             return ApiResponse<AuthDto>.ErrorResponse(
-                Error.Unauthorized, Error.ErrorType.Unauthorized);
+                Error.Unauthorized, Error.ErrorType.Unauthorized, details);
         }
 
         var user = token.User;
@@ -173,6 +176,7 @@ public class AuthService(
             };
         }
 
-        return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
+        return ApiResponse<AuthDto>.SuccessResponse(
+            authDto, Success.IS_AUTHENTICATED);
     }
 }
