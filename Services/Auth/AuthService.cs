@@ -82,19 +82,14 @@ public class AuthService(
                 Error.Unauthorized, Error.ErrorType.Unauthorized, details);
         }
 
-        if (!BCrypt.Net.BCrypt.Verify(authLogin.Password, user.Password))
+        if (!PasswordUtil.VerifyPassword(user.Password, authLogin.Password))
         {
             details.Add("password", "Invalid credentials");
             return ApiResponse<AuthDto>.ErrorResponse(
                 Error.Unauthorized, Error.ErrorType.Unauthorized, details);
         }
 
-        var authDto = new AuthDto
-        {
-            Access = TokenUtil.GenerateAccess(user, configuration),
-            Refresh = TokenUtil.GenerateRefresh(user, configuration)
-        };
-
+        var authDto = TokenUtil.GenerateTokens(user, configuration);
         var token = new Token
         {
             UserId = user.Id,
@@ -104,7 +99,8 @@ public class AuthService(
 
         await context.Tokens.AddAsync(token);
         await context.SaveChangesAsync();
-        return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED());
+        return ApiResponse<AuthDto>.SuccessResponse(
+            authDto, Success.IS_AUTHENTICATED);
     }
 
     public async Task<bool> LogoutUserAsync(string refreshToken)
