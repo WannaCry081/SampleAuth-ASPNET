@@ -40,4 +40,9 @@ public interface IAuthService
     ///     The access and refresh tokens.
     /// </returns>
     Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(string refreshToken);
+
+    /// <summary>
+    ///     Remove user's revoked tokens.
+    /// </summary>
+    Task RemoveRevokedTokenAsync();
 }

@@ -7,6 +7,7 @@ using sample_auth_aspnet.Models.Entities;
 using sample_auth_aspnet.Models.Response;
 using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Utils;
+
 namespace sample_auth_aspnet.Services.Auth;
 
 public class AuthService(
@@ -177,5 +178,18 @@ public class AuthService(
 
         return ApiResponse<AuthDto>.SuccessResponse(
             newAccessToken, Success.IS_AUTHENTICATED);
+    }
+
+    public async Task RemoveRevokedTokenAsync()
+    {
+        var tokens = await context.Tokens
+            .Where(t => t.IsRevoked || t.Expiration < DateTime.UtcNow)
+            .ToListAsync();
+
+        if (tokens.Count != 0)
+        {
+            context.Tokens.RemoveRange(tokens);
+            await context.SaveChangesAsync();
+        }
     }
 }
