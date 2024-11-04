@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace sample_auth_aspnet.Models.Entities;
 
 [Index(nameof(Email), IsUnique = true)]
