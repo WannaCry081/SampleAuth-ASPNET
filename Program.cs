@@ -137,6 +137,8 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
 
     services.AddTransient<DataContext>();
 
+    services.AddHostedService<AuthBackgroundService>();
+
     services.AddScoped<IAuthService, AuthService>();
     services.AddScoped<IUserService, UserService>();
 }
