@@ -133,12 +133,23 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     });
     #endregion
 
+    #region Validation Configuration
+    services.Configure<ApiBehaviorOptions>(options =>
+    {
+        options.SuppressModelStateInvalidFilter = true;
+    });
+    #endregion
+
     services.AddLogging();
 
     services.AddTransient<DataContext>();
 
+    #region Background Service 
     services.AddHostedService<AuthBackgroundService>();
+    #endregion
 
+    #region Services Configuration
     services.AddScoped<IAuthService, AuthService>();
     services.AddScoped<IUserService, UserService>();
+    #endregion
 }
