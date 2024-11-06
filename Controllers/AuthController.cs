@@ -170,26 +170,21 @@ public class AuthController(
         Type = typeof(SuccessResponseDto<AuthDto>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized,
         Type = typeof(UnauthorizedResult))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized,
-        Type = typeof(ErrorResponseDto))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RefreshUserTokens([FromBody][Required] string refreshToken)
     {
         try
         {
-            var userId = ControllerUtil.GetUserId(User);
-            logger.LogInformation("User token refresh attempt for userId: {UserId}", userId);
-
-            if (userId == -1)
-                return Unauthorized();
+            logger.LogInformation("Attempting to Refresh User Token.");
 
             var response = await authService.RefreshUserTokensAsync(refreshToken);
             if (response.Status.Equals("error"))
             {
-                logger.LogWarning("Token refresh failed for userId: {UserId}.", userId);
+                logger.LogWarning("Failed to refresh user token.");
                 return ControllerUtil.GetActionResultFromError(response);
             }
 
-            logger.LogInformation("Tokens refreshed successfully for userId: {UserId}", userId);
+            logger.LogInformation("Successfully refreshed user tokens.");
             return Ok(response);
         }
         catch (Exception ex)
