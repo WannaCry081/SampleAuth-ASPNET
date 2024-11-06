@@ -113,7 +113,7 @@ public class AuthService(
         var details = new Dictionary<string, string>();
 
         var principal = TokenUtil.ValidateRefreshToken(refreshToken, configuration);
-        if (principal == null)
+        if (principal is null)
         {
             details.Add("token", "Invalid refresh token.");
             return ApiResponse<AuthDto>.ErrorResponse(
@@ -124,7 +124,7 @@ public class AuthService(
             .Include(t => t.User)
             .FirstOrDefaultAsync(t => t.Refresh == refreshToken);
 
-        if (token == null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
+        if (token is null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
         {
             details.Add("token", "Refresh token is already expired or invalid.");
             return ApiResponse<AuthDto>.ErrorResponse(
