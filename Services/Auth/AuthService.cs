@@ -65,21 +65,15 @@ public class AuthService(
 
     public async Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin)
     {
-        Dictionary<string, string> details = [];
+        var details = new Dictionary<string, string>();
 
         var user = await context.Users.FirstOrDefaultAsync(
             u => u.Email.Equals(authLogin.Email));
 
-        if (user == null)
+        if (user is null || !PasswordUtil.VerifyPassword(
+            user.Password, authLogin.Password))
         {
-            details.Add("email", "Invalid credentials");
-            return ApiResponse<AuthDto>.ErrorResponse(
-                Error.Unauthorized, Error.ErrorType.Unauthorized, details);
-        }
-
-        if (!PasswordUtil.VerifyPassword(user.Password, authLogin.Password))
-        {
-            details.Add("password", "Invalid credentials");
+            details.Add("user", "Invalid user credentials.");
             return ApiResponse<AuthDto>.ErrorResponse(
                 Error.Unauthorized, Error.ErrorType.Unauthorized, details);
         }
