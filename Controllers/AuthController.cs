@@ -119,32 +119,29 @@ public class AuthController(
     /// <returns> 
     ///     Returns an <see cref="IActionResult"/> containing:
     ///     - <see cref="NoContentResult"/>if the request is valid.
-    ///     - <see cref="UnauthorizedObjectResult"/> if an the credential is invalid.
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
     /// <response code="204">No content.</response>
     /// <response code="401">Unauthorized access.</response>
     /// <response code="500">Internal server error.</response>
     [HttpPost("logout")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> LogoutUser([FromBody][Required] string refreshToken)
     {
         try
         {
-            var userId = ControllerUtil.GetUserId(User);
-            logger.LogInformation("User logout attempt for userId: {UserId}", userId);
-
-            if (userId == -1)
-                return Unauthorized();
-
+            logger.LogInformation("Attempting to Logout User.");
             var response = await authService.LogoutUserAsync(refreshToken);
 
             if (!response)
             {
-                logger.LogWarning("Logout failed for userId: {UserId}. Invalid refresh token.", userId);
+                logger.LogWarning("Logout failed. Invalid refresh token.");
                 return BadRequest();
             }
 
-            logger.LogInformation("User successfully logged out for userId: {UserId}", userId);
+            logger.LogInformation("User successfully logged.");
             return NoContent();
         }
         catch (Exception ex)
