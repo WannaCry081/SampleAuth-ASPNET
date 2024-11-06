@@ -88,6 +88,11 @@ public class AuthController(
         try
         {
             logger.LogInformation("User login attempt for email: {Email}", authLogin.Email);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+            }
+
             var response = await authService.LoginUserAsync(authLogin);
 
             if (response.Status.Equals("error"))
