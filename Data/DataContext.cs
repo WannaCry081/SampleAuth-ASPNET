@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using sample_auth_aspnet.Models.Entities;
 
 namespace sample_auth_aspnet.Data;

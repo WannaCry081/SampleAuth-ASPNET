@@ -1,5 +1,4 @@
 using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Models.Dtos.Auth;
@@ -19,20 +18,13 @@ public class AuthService(
 {
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
-        Dictionary<string, string> details = [];
+        var details = new Dictionary<string, string>();
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            if (!authRegister.Password.Equals(authRegister.RePassword))
-            {
-                details.Add("rePassword", "Passwords do not match.");
-                return ApiResponse<AuthDto>.ErrorResponse(
-                    Error.ValidationError, Error.ErrorType.ValidationError, details);
-            }
-
             if (await context.Users.AnyAsync(u => u.Email.Equals(authRegister.Email)))
             {
-                details.Add("email", "Invalid email address.");
+                details.Add("email", "Invalid email or already in use.");
                 return ApiResponse<AuthDto>.ErrorResponse(
                     Error.ValidationError, Error.ErrorType.ValidationError, details);
             }
@@ -73,21 +65,15 @@ public class AuthService(
 
     public async Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin)
     {
-        Dictionary<string, string> details = [];
+        var details = new Dictionary<string, string>();
 
         var user = await context.Users.FirstOrDefaultAsync(
             u => u.Email.Equals(authLogin.Email));
 
-        if (user == null)
+        if (user is null || !PasswordUtil.VerifyPassword(
+            user.Password, authLogin.Password))
         {
-            details.Add("email", "Invalid credentials");
-            return ApiResponse<AuthDto>.ErrorResponse(
-                Error.Unauthorized, Error.ErrorType.Unauthorized, details);
-        }
-
-        if (!PasswordUtil.VerifyPassword(user.Password, authLogin.Password))
-        {
-            details.Add("password", "Invalid credentials");
+            details.Add("user", "Invalid user credentials.");
             return ApiResponse<AuthDto>.ErrorResponse(
                 Error.Unauthorized, Error.ErrorType.Unauthorized, details);
         }
@@ -127,7 +113,7 @@ public class AuthService(
         var details = new Dictionary<string, string>();
 
         var principal = TokenUtil.ValidateRefreshToken(refreshToken, configuration);
-        if (principal == null)
+        if (principal is null)
         {
             details.Add("token", "Invalid refresh token.");
             return ApiResponse<AuthDto>.ErrorResponse(
@@ -138,7 +124,7 @@ public class AuthService(
             .Include(t => t.User)
             .FirstOrDefaultAsync(t => t.Refresh == refreshToken);
 
-        if (token == null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
+        if (token is null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
         {
             details.Add("token", "Refresh token is already expired or invalid.");
             return ApiResponse<AuthDto>.ErrorResponse(

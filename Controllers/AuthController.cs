@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using sample_auth_aspnet.Controllers.Utils;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Dtos.Reponse;
@@ -40,6 +40,11 @@ public class AuthController(
         try
         {
             logger.LogInformation("User registration attempt for email: {Email}", authRegister.Email);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+            }
+
             var response = await authService.RegisterUserAsync(authRegister);
 
             if (response.Status.Equals("error"))
@@ -84,6 +89,11 @@ public class AuthController(
         try
         {
             logger.LogInformation("User login attempt for email: {Email}", authLogin.Email);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+            }
+
             var response = await authService.LoginUserAsync(authLogin);
 
             if (response.Status.Equals("error"))
@@ -109,32 +119,29 @@ public class AuthController(
     /// <returns> 
     ///     Returns an <see cref="IActionResult"/> containing:
     ///     - <see cref="NoContentResult"/>if the request is valid.
-    ///     - <see cref="UnauthorizedObjectResult"/> if an the credential is invalid.
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
     /// <response code="204">No content.</response>
     /// <response code="401">Unauthorized access.</response>
     /// <response code="500">Internal server error.</response>
     [HttpPost("logout")]
-    public async Task<IActionResult> LogoutUser([FromBody] string refreshToken)
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> LogoutUser([FromBody][Required] string refreshToken)
     {
         try
         {
-            var userId = ControllerUtil.GetUserId(User);
-            logger.LogInformation("User logout attempt for userId: {UserId}", userId);
-
-            if (userId == -1)
-                return Unauthorized();
-
+            logger.LogInformation("Attempting to Logout User.");
             var response = await authService.LogoutUserAsync(refreshToken);
 
             if (!response)
             {
-                logger.LogWarning("Logout failed for userId: {UserId}. Invalid refresh token.", userId);
+                logger.LogWarning("Logout failed. Invalid refresh token.");
                 return BadRequest();
             }
 
-            logger.LogInformation("User successfully logged out for userId: {UserId}", userId);
+            logger.LogInformation("User successfully logged.");
             return NoContent();
         }
         catch (Exception ex)
@@ -163,26 +170,21 @@ public class AuthController(
         Type = typeof(SuccessResponseDto<AuthDto>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized,
         Type = typeof(UnauthorizedResult))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized,
-        Type = typeof(ErrorResponseDto))]
-    public async Task<IActionResult> RefreshUserTokens([FromBody] string refreshToken)
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> RefreshUserTokens([FromBody][Required] string refreshToken)
     {
         try
         {
-            var userId = ControllerUtil.GetUserId(User);
-            logger.LogInformation("User token refresh attempt for userId: {UserId}", userId);
-
-            if (userId == -1)
-                return Unauthorized();
+            logger.LogInformation("Attempting to Refresh User Token.");
 
             var response = await authService.RefreshUserTokensAsync(refreshToken);
             if (response.Status.Equals("error"))
             {
-                logger.LogWarning("Token refresh failed for userId: {UserId}.", userId);
+                logger.LogWarning("Failed to refresh user token.");
                 return ControllerUtil.GetActionResultFromError(response);
             }
 
-            logger.LogInformation("Tokens refreshed successfully for userId: {UserId}", userId);
+            logger.LogInformation("Successfully refreshed user tokens.");
             return Ok(response);
         }
         catch (Exception ex)

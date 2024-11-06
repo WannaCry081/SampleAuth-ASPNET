@@ -1,5 +1,4 @@
 using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Models.Dtos.Users;
 using sample_auth_aspnet.Models.Response;

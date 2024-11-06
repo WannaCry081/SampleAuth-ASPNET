@@ -1,8 +1,8 @@
+global using Microsoft.EntityFrameworkCore;
 using System.Text;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Services.Auth;
@@ -133,12 +133,23 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     });
     #endregion
 
+    #region Validation Configuration
+    services.Configure<ApiBehaviorOptions>(options =>
+    {
+        options.SuppressModelStateInvalidFilter = true;
+    });
+    #endregion
+
     services.AddLogging();
 
     services.AddTransient<DataContext>();
 
+    #region Background Service 
     services.AddHostedService<AuthBackgroundService>();
+    #endregion
 
+    #region Services Configuration
     services.AddScoped<IAuthService, AuthService>();
     services.AddScoped<IUserService, UserService>();
+    #endregion
 }
