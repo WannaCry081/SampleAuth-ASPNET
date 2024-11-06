@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using sample_auth_aspnet.Controllers.Utils;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Dtos.Reponse;
@@ -125,7 +126,7 @@ public class AuthController(
     /// <response code="401">Unauthorized access.</response>
     /// <response code="500">Internal server error.</response>
     [HttpPost("logout")]
-    public async Task<IActionResult> LogoutUser([FromBody] string refreshToken)
+    public async Task<IActionResult> LogoutUser([FromBody][Required] string refreshToken)
     {
         try
         {
@@ -174,7 +175,7 @@ public class AuthController(
         Type = typeof(UnauthorizedResult))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized,
         Type = typeof(ErrorResponseDto))]
-    public async Task<IActionResult> RefreshUserTokens([FromBody] string refreshToken)
+    public async Task<IActionResult> RefreshUserTokens([FromBody][Required] string refreshToken)
     {
         try
         {
