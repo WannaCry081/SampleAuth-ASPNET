@@ -18,20 +18,13 @@ public class AuthService(
 {
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
-        Dictionary<string, string> details = [];
+        var details = new Dictionary<string, string>();
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            if (!authRegister.Password.Equals(authRegister.RePassword))
-            {
-                details.Add("rePassword", "Passwords do not match.");
-                return ApiResponse<AuthDto>.ErrorResponse(
-                    Error.ValidationError, Error.ErrorType.ValidationError, details);
-            }
-
             if (await context.Users.AnyAsync(u => u.Email.Equals(authRegister.Email)))
             {
-                details.Add("email", "Invalid email address.");
+                details.Add("email", "Invalid email or already in use.");
                 return ApiResponse<AuthDto>.ErrorResponse(
                     Error.ValidationError, Error.ErrorType.ValidationError, details);
             }
