@@ -1,4 +1,3 @@
-using System.Text;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -76,14 +75,14 @@ public static class TokenUtil
         };
     }
 
-    public static ClaimsPrincipal? ValidateRefreshToken(string refreshToken, JWTSettings jwt)
+    public static ClaimsPrincipal? ValidateToken(string token, JWTSettings jwt)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(jwt.Secret);
+        var key = Base64UrlEncoder.DecodeBytes(jwt.Secret);
 
         try
         {
-            var principal = tokenHandler.ValidateToken(refreshToken, new TokenValidationParameters
+            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
@@ -92,6 +91,7 @@ public static class TokenUtil
                 ValidateAudience = true,
                 ValidAudience = jwt.Audience,
                 ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
             }, out SecurityToken validatedToken);
 
             return principal;
