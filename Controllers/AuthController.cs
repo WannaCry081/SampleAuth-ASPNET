@@ -24,7 +24,7 @@ public class AuthController(
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
     /// <response code="201">Returns the access and refresh tokens.</response>
-    /// <response code="404">Unauthorized access.</response>
+    /// <response code="400">Bad request.</response>
     /// <response code="500">Internal server error.</response>
     [HttpPost("register")]
     [Consumes("application/json")]
@@ -37,11 +37,8 @@ public class AuthController(
     public async Task<IActionResult> RegisterUser([FromBody] AuthRegisterDto authRegister)
     {
         logger.LogInformation("User registration attempt initiated.");
-
         if (!ModelState.IsValid)
-        {
             return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
-        }
 
         try
         {
