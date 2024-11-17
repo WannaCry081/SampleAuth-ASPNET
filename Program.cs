@@ -150,9 +150,15 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     services.Configure<JWTSettings>(configuration.GetSection("JWT"));
     services.AddSingleton(resolver =>
         resolver.GetRequiredService<IOptions<JWTSettings>>().Value);
+    #endregion
+
+    #region SMTP Data Binding 
+    services.Configure<SMTPSettings>(configuration.GetSection("SMTP"));
+    services.AddSingleton(resolver =>
+        resolver.GetRequiredService<IOptions<SMTPSettings>>().Value);
+    #endregion
 
     services.AddTransient<DataContext>();
-    #endregion
 
     #region Background Service 
     services.AddHostedService<AuthBackgroundService>();
