@@ -86,29 +86,29 @@ public class AuthController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> LoginUser([FromBody] AuthLoginDto authLogin)
     {
+        logger.LogInformation("Login attempt for user.");
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+        }
+
         try
         {
-            logger.LogInformation("User login attempt for email: {Email}", authLogin.Email);
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
-            }
-
             var response = await authService.LoginUserAsync(authLogin);
 
             if (response.Status.Equals("error"))
             {
-                logger.LogWarning("User login failed for email: {Email}.", authLogin.Email);
+                logger.LogWarning("Login failed for email: {Email}.", authLogin.Email);
                 return ControllerUtil.GetActionResultFromError(response);
             }
 
-            logger.LogInformation("User login successful for email: {Email}", authLogin.Email);
+            logger.LogInformation("Login successful for email: {Email}", authLogin.Email);
             return Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error in logging in user for email: {Email}", authLogin.Email);
-            return Problem("An error occurred while processing your request.");
+            logger.LogError(ex, "Unexpected error occurred during login.");
+            return Problem("An internal server error occurred. Please try again later.");
         }
     }
 
