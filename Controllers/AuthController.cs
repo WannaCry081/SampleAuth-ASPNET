@@ -206,4 +206,37 @@ public class AuthController(
             return Problem("An internal server error occurred. Please try again later.");
         }
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotUserPassword([FromBody] AuthForgotPasswordDto authForgotPassword)
+    {
+        logger.LogInformation("Forgot password request initiated for user.");
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
+        }
+
+        try
+        {
+            var isEmailSent = await authService.ForgotUserPasswordAsync(authForgotPassword.Email);
+
+            if (!isEmailSent)
+            {
+                logger.LogWarning("Failed to send email to {Email}. The email might not be registered.", authForgotPassword.Email);
+                return BadRequest(new
+                {
+                    Message = "Failed to process the forgot password request."
+                });
+            }
+
+            logger.LogInformation("Forgot password email sent successfully to {Email}.", authForgotPassword.Email);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error occurred during forgot password request for {Email}.", authForgotPassword.Email);
+            return Problem("An internal server error occurred. Please try again later.");
+        }
+    }
 }
