@@ -71,8 +71,8 @@ public static class TokenUtil
     {
         return new AuthDto
         {
-            Access = GenerateAccess(user, jwt),
-            Refresh = GenerateRefresh(user, jwt)
+            Access = GenerateToken(user, jwt, TokenType.ACCESS),
+            Refresh = GenerateToken(user, jwt, TokenType.REFRESH)
         };
     }
 
