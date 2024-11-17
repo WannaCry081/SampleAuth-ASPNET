@@ -41,7 +41,7 @@ public interface IAuthService
     /// </returns>
     Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(string refreshToken);
 
-    Task<bool> ForgotUserPasswordAsync(string email);
+    Task<ApiResponse<object?>> ForgotUserPasswordAsync(string email);
 
     /// <summary>
     ///     Remove user's revoked tokens.
