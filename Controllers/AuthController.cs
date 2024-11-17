@@ -143,7 +143,7 @@ public class AuthController(
             if (!isSuccess)
             {
                 logger.LogWarning("Logout failed. Invalid refresh token provided.");
-                return BadRequest(new ErrorResponseDto
+                return BadRequest(new
                 {
                     Message = "Invalid refresh token."
                 });
