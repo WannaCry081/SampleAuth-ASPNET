@@ -40,7 +40,7 @@ public class AuthController(
 
         if (!ModelState.IsValid)
         {
-            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
         }
 
         try
@@ -89,7 +89,7 @@ public class AuthController(
         logger.LogInformation("Login attempt for user.");
         if (!ModelState.IsValid)
         {
-            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
         }
 
         try
@@ -133,7 +133,7 @@ public class AuthController(
         logger.LogInformation("Logout attempt for user.");
         if (!ModelState.IsValid)
         {
-            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
         }
 
         try
@@ -184,7 +184,7 @@ public class AuthController(
         logger.LogInformation("Token refresh attempt for user.");
         if (!ModelState.IsValid)
         {
-            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
         }
 
         try
