@@ -115,7 +115,7 @@ public class AuthController(
     /// <summary>
     ///     Blacklist refresh token of the authenticated user.
     /// </summary>
-    /// <param name="refreshToken"></param>
+    /// <param name="authRefreshToken"></param>
     /// <returns> 
     ///     Returns an <see cref="IActionResult"/> containing:
     ///     - <see cref="NoContentResult"/>if the request is valid.
@@ -128,26 +128,34 @@ public class AuthController(
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> LogoutUser([FromBody][Required] string refreshToken)
+    public async Task<IActionResult> LogoutUser([FromBody] AuthRefreshTokenDto authRefreshToken)
     {
+        logger.LogInformation("Logout attempt for user.");
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+        }
+
         try
         {
-            logger.LogInformation("Attempting to Logout User.");
-            var response = await authService.LogoutUserAsync(refreshToken);
+            var isSuccess = await authService.LogoutUserAsync(authRefreshToken.Refresh);
 
-            if (!response)
+            if (!isSuccess)
             {
-                logger.LogWarning("Logout failed. Invalid refresh token.");
-                return BadRequest();
+                logger.LogWarning("Logout failed. Invalid refresh token provided.");
+                return BadRequest(new ErrorResponseDto
+                {
+                    Message = "Invalid refresh token."
+                });
             }
 
-            logger.LogInformation("User successfully logged.");
+            logger.LogInformation("User logged out successfully.");
             return NoContent();
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error in logging out user.");
-            return Problem("An error occurred while processing your request.");
+            logger.LogError(ex, "Unexpected error occurred during logout.");
+            return Problem("An internal server error occurred. Please try again later.");
         }
     }
 
