@@ -257,4 +257,29 @@ public class AuthController(
             return Problem("An internal server error occurred. Please try again later.");
         }
     }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetUserPassword([FromQuery] string resetToken, [FromBody] AuthResetPasswordDto authResetPassword)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
+
+        try
+        {
+            var response = await authService.ResetUserPasswordAsync(
+                resetToken, authResetPassword);
+
+            if (!response.Success)
+            {
+                return ControllerUtil.GetActionResultFromError(response);
+            }
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error occurred during resetting user's password");
+            return Problem("An internal server error occurred. Please try again later.");
+        }
+    }
 }
