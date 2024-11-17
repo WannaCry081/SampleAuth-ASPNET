@@ -207,21 +207,42 @@ public class AuthController(
         }
     }
 
+    /// <summary>
+    ///     Send an email containing the reset password link.
+    /// </summary>
+    /// <param name="authForgotPassword"></param>
+    /// <returns>
+    ///     Returns an <see cref="IActionResult" /> containing:
+    ///     - <see cref="OkObjectResult"/> if the request is valid.
+    ///     - <see cref="BadRequestObjectResult"/> if the request is invalid.
+    ///     - <see cref="NotFoundObjectResult"/> if the request do not exists.
+    ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
+    /// </returns>
+    /// <response code="200">Returns the new access and refresh tokens.</response>
+    /// <response code="400">Bad request.</response>
+    /// <response code="404">No resource found.</response>
+    /// <response code="500">Internal server error.</response>
     [HttpPost("forgot-password")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(SuccessResponseDto<object?>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest,
+        Type = typeof(ErrorResponseDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound,
+        Type = typeof(ErrorResponseDto))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ForgotUserPassword([FromBody] AuthForgotPasswordDto authForgotPassword)
     {
         logger.LogInformation("Forgot password request initiated for user.");
 
         if (!ModelState.IsValid)
-        {
             return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
-        }
 
         try
         {
-            var isEmailSent = await authService.ForgotUserPasswordAsync(authForgotPassword.Email);
+            var response = await authService.ForgotUserPasswordAsync(authForgotPassword.Email);
 
-            if (!isEmailSent)
+            if (!response.Success)
             {
                 logger.LogWarning("Failed to send email to {Email}. The email might not be registered.", authForgotPassword.Email);
                 return BadRequest(new
@@ -231,7 +252,7 @@ public class AuthController(
             }
 
             logger.LogInformation("Forgot password email sent successfully to {Email}.", authForgotPassword.Email);
-            return NoContent();
+            return Ok(response);
         }
         catch (Exception ex)
         {
