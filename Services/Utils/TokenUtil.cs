@@ -25,16 +25,33 @@ public static class TokenUtil
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(
-                DateTime.UtcNow).ToUnixTimeSeconds().ToString(),
-                ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Iat,
+                new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(),
+                ClaimValueTypes.Integer64)
         };
 
-        if (isAccessToken)
+        switch (type)
         {
-            claims.Add(new(ClaimTypes.Email, user.Email));
-            claims.Add(new(ClaimTypes.NameIdentifier, user.Id.ToString()));
+            case TokenType.REFRESH:
+                expires = expires.AddDays(jwt.RefreshTokenExpiry);
+                break;
+
+            case TokenType.ACCESS:
+                expires = expires.AddHours(jwt.AccessTokenExpiry);
+                claims.Add(new(ClaimTypes.Email, user.Email));
+                claims.Add(new(ClaimTypes.NameIdentifier, user.Id.ToString()));
+                break;
+
+            case TokenType.RESET:
+                expires = expires.AddMinutes(jwt.ResetTokenExpiry);
+                claims.Add(new(ClaimTypes.Email, user.Email));
+                claims.Add(new("Purpose", "reset-password"));
+                break;
         }
+
+        claims.Add(new(JwtRegisteredClaimNames.Exp,
+            new DateTimeOffset(expires).ToUnixTimeSeconds().ToString(),
+            ClaimValueTypes.Integer64));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
