@@ -171,19 +171,25 @@ public class AuthService(
         }
     }
 
-    public async Task<bool> ForgotUserPasswordAsync(string email)
+    public async Task<ApiResponse<object?>> ForgotUserPasswordAsync(string email)
     {
         var user = await context.Users
             .FirstOrDefaultAsync(u => u.Email.Equals(email));
 
         if (user is null)
-            return false;
+            return ApiResponse<object?>.ErrorResponse(
+                Error.NotFound, Error.ErrorType.NotFound);
+
 
         var resetToken = TokenUtil.GenerateToken(user, jwt, TokenUtil.TokenType.RESET);
         var resetLink = $"{app.Url}?token={resetToken}";
 
-        await emailService.SendResetEmailAsync(email, resetLink);
-        return true;
+        var isEmailSent = await emailService.SendResetEmailAsync(email, resetLink);
+        if (!isEmailSent)
+            return ApiResponse<object?>.ErrorResponse(
+                Error.ValidationError, Error.ErrorType.ValidationError);
+
+        return ApiResponse<object?>.SuccessResponse(null, Success.EMAILED_SUCCESSFULLY);
     }
 
 
