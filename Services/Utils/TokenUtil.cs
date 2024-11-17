@@ -53,7 +53,7 @@ public static class TokenUtil
             new DateTimeOffset(expires).ToUnixTimeSeconds().ToString(),
             ClaimValueTypes.Integer64));
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Secret));
+        var key = new SymmetricSecurityKey(Base64UrlEncoder.DecodeBytes(jwt.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
