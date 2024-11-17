@@ -31,24 +31,11 @@ public class AuthService(
 
             var user = mapper.Map<User>(authRegister);
             user.Password = PasswordUtil.HashPassword(user.Password);
-
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
 
             var authDto = TokenUtil.GenerateTokens(user, jwt);
-
-            var token = new Token
-            {
-                UserId = user.Id,
-                Refresh = authDto.Refresh,
-                User = user,
-                Expiration = DateTime.UtcNow.AddDays(
-                    Convert.ToDouble(jwt.RefreshTokenExpiry))
-            };
-
-            user.Tokens.Add(token);
-            await context.Tokens.AddAsync(token);
-            await context.SaveChangesAsync();
+            await SaveRefreshTokenAsync(user, authDto.Refresh, jwt.RefreshTokenExpiry);
             await transaction.CommitAsync();
 
             return ApiResponse<AuthDto>.SuccessResponse(
@@ -79,17 +66,8 @@ public class AuthService(
         }
 
         var authDto = TokenUtil.GenerateTokens(user, jwt);
-        var token = new Token
-        {
-            UserId = user.Id,
-            Refresh = authDto.Refresh,
-            User = user,
-            Expiration = DateTime.UtcNow.AddDays(
-                Convert.ToDouble(jwt.RefreshTokenExpiry))
-        };
+        await SaveRefreshTokenAsync(user, authDto.Refresh, jwt.RefreshTokenExpiry);
 
-        await context.Tokens.AddAsync(token);
-        await context.SaveChangesAsync();
         return ApiResponse<AuthDto>.SuccessResponse(
             authDto, Success.IS_AUTHENTICATED);
     }
@@ -114,7 +92,7 @@ public class AuthService(
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            var principal = TokenUtil.ValidateRefreshToken(refreshToken, jwt);
+            var principal = TokenUtil.ValidateToken(refreshToken, jwt);
             if (principal is null)
             {
                 details.Add("token", "Invalid refresh token.");
@@ -148,19 +126,11 @@ public class AuthService(
             var user = token.User;
             token.IsRevoked = true;
 
-            var newTokensGenerated = TokenUtil.GenerateTokens(user, jwt);
-            var newRefreshToken = new Token
-            {
-                UserId = user.Id,
-                Refresh = newTokensGenerated.Refresh,
-                Expiration = DateTime.UtcNow.AddDays(jwt.RefreshTokenExpiry)
-            };
-
-            await context.Tokens.AddAsync(newRefreshToken);
-            await context.SaveChangesAsync();
+            var authDto = TokenUtil.GenerateTokens(user, jwt);
+            await SaveRefreshTokenAsync(user, authDto.Refresh, jwt.RefreshTokenExpiry);
             await transaction.CommitAsync();
 
-            return ApiResponse<AuthDto>.SuccessResponse(newTokensGenerated, Success.IS_AUTHENTICATED);
+            return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED);
         }
         catch (Exception ex)
         {
