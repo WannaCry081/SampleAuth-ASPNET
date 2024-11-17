@@ -50,6 +50,14 @@ public interface IAuthService
     /// </returns>
     Task<ApiResponse<object?>> ForgotUserPasswordAsync(string email);
 
+    /// <summary>
+    ///     Reset user's password.
+    /// </summary>
+    /// <param name="resetToken"></param>
+    /// <param name="authResetPassword"></param>
+    /// <returns>
+    ///     An access and refresh tokens if password reset is successful.
+    /// </returns>
     Task<ApiResponse<AuthDto>> ResetUserPasswordAsync(
         string resetToken, AuthResetPasswordDto authResetPassword);
 
