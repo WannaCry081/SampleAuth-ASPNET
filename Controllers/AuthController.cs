@@ -117,23 +117,23 @@ public class AuthController(
     /// <param name="authRefreshToken"></param>
     /// <returns> 
     ///     Returns an <see cref="IActionResult"/> containing:
-    ///     - <see cref="NoContentResult"/>if the request is valid.
+    ///     - <see cref="NoContentResult"/> if the request is valid.
+    ///     - <see cref="BadRequestObjectResult"/> if the request is invalid.
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
     /// <response code="204">No content.</response>
-    /// <response code="401">Unauthorized access.</response>
+    /// <response code="400">Bad request.</response>
     /// <response code="500">Internal server error.</response>
     [HttpPost("logout")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> LogoutUser([FromBody] AuthRefreshTokenDto authRefreshToken)
     {
         logger.LogInformation("Logout attempt for user.");
         if (!ModelState.IsValid)
-        {
             return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
-        }
 
         try
         {
