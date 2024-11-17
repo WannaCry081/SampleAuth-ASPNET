@@ -10,8 +10,17 @@ namespace sample_auth_aspnet.Services.Utils;
 
 public static class TokenUtil
 {
-    private static string GenerateToken(User user, DateTime expires, JWTSettings jwt, bool isAccessToken = true)
+    public enum TokenType
     {
+        REFRESH,
+        ACCESS,
+        RESET
+    }
+
+    public static string GenerateToken(User user, JWTSettings jwt, TokenType type)
+    {
+        DateTime expires = DateTime.UtcNow;
+
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
