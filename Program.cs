@@ -11,8 +11,7 @@ using Newtonsoft.Json.Converters;
 using Microsoft.OpenApi.Models;
 using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Users;
-using sample_auth_aspnet.Services.Utils;
-using Microsoft.Extensions.Options;
+using sample_auth_aspnet.Services.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -168,6 +167,7 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     #endregion
 
     #region Services Configuration
+    services.AddScoped<IEmailService, EmailService>();
     services.AddScoped<IAuthService, AuthService>();
     services.AddScoped<IUserService, UserService>();
     #endregion
