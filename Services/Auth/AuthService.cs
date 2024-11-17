@@ -3,15 +3,18 @@ using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Entities;
 using sample_auth_aspnet.Models.Response;
+using sample_auth_aspnet.Services.Email;
 using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Utils;
 
 namespace sample_auth_aspnet.Services.Auth;
 public class AuthService(
+    IEmailService emailService,
     ILogger<AuthService> logger,
     DataContext context,
     IMapper mapper,
-    JWTSettings jwt) : IAuthService
+    JWTSettings jwt,
+    ApplicationSettings app) : IAuthService
 {
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
@@ -167,6 +170,22 @@ public class AuthService(
                 Error.ERROR_CREATING_RESOURCE("Token"), Error.ErrorType.InternalServer);
         }
     }
+
+    public async Task<bool> ForgotUserPasswordAsync(string email)
+    {
+        var user = await context.Users
+            .FirstOrDefaultAsync(u => u.Email.Equals(email));
+
+        if (user is null)
+            return false;
+
+        var resetToken = TokenUtil.GenerateToken(user, jwt, TokenUtil.TokenType.RESET);
+        var resetLink = $"{app.Url}?token={resetToken}";
+
+        await emailService.SendResetEmailAsync(email, resetLink);
+        return true;
+    }
+
 
     public async Task RemoveRevokedTokenAsync()
     {
