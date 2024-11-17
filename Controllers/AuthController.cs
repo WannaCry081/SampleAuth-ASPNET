@@ -47,7 +47,7 @@ public class AuthController(
         {
             var response = await authService.RegisterUserAsync(authRegister);
 
-            if (response.Status.Equals("error"))
+            if (!response.Success)
             {
                 logger.LogWarning("Registration failed for email: {Email}.", authRegister.Email);
                 return ControllerUtil.GetActionResultFromError(response);
@@ -96,7 +96,7 @@ public class AuthController(
         {
             var response = await authService.LoginUserAsync(authLogin);
 
-            if (response.Status.Equals("error"))
+            if (!response.Success)
             {
                 logger.LogWarning("Login failed for email: {Email}.", authLogin.Email);
                 return ControllerUtil.GetActionResultFromError(response);
@@ -191,7 +191,7 @@ public class AuthController(
         {
             var response = await authService.RefreshUserTokensAsync(authRefreshToken.Refresh);
 
-            if (response.Status.Equals("error"))
+            if (!response.Success)
             {
                 logger.LogWarning("Token refresh failed. Invalid refresh token.");
                 return ControllerUtil.GetActionResultFromError(response);

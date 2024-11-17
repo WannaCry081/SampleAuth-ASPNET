@@ -7,9 +7,10 @@ namespace sample_auth_aspnet.Models.Dtos.Reponse;
 public class SuccessResponseDto<T>
 {
     /// <summary>
-    ///     Indicates the status of the response, typically set to "success".
+    ///     Indicates the success of the response.
     /// </summary>
-    public string Status { get; init; } = "success";
+    public bool Success { get; init; } = true;
+
 
     /// <summary>
     ///     Message providing details about the success of the operation.

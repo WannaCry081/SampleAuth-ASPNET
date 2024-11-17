@@ -5,7 +5,7 @@ namespace sample_auth_aspnet.Models.Response;
 
 public class ApiResponse<T>
 {
-    public string Status { get; init; } = null!;
+    public bool Success { get; init; }
     public string Message { get; init; } = null!;
 
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
@@ -21,17 +21,18 @@ public class ApiResponse<T>
     {
         return new ApiResponse<T>
         {
-            Status = "success",
+            Success = true,
             Data = data,
             Message = message
         };
     }
 
-    public static ApiResponse<T> ErrorResponse(string message, ErrorType errorType, Dictionary<string, string>? details = null)
+    public static ApiResponse<T> ErrorResponse(
+        string message, ErrorType errorType, Dictionary<string, string>? details = null)
     {
         return new ApiResponse<T>
         {
-            Status = "error",
+            Success = false,
             Message = message,
             Title = errorType,
             Details = details
