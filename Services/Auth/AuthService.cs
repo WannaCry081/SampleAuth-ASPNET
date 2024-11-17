@@ -95,9 +95,9 @@ public class AuthService(
     public async Task<bool> LogoutUserAsync(string refreshToken)
     {
         var token = await context.Tokens.FirstOrDefaultAsync(
-            t => t.Refresh.Equals(refreshToken));
+            t => t.Refresh.Equals(refreshToken) && !t.IsRevoked && t.Expiration >= DateTime.UtcNow);
 
-        if (token is null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
+        if (token is null)
             return false;
 
         token.IsRevoked = true;
