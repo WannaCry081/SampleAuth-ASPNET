@@ -8,9 +8,9 @@ namespace sample_auth_aspnet.Models.Dtos.Reponse;
 public class ErrorResponseDto
 {
     /// <summary>
-    ///     Indicates the status of the response, typically set to "error".
+    ///     Indicates the success of the response.
     /// </summary>
-    public string Status { get; init; } = "error";
+    public bool Success { get; init; } = false;
 
     /// <summary>
     ///     Message providing details about the error.

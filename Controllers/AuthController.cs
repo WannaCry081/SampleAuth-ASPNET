@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
 using sample_auth_aspnet.Controllers.Utils;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Dtos.Reponse;
@@ -37,29 +36,30 @@ public class AuthController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RegisterUser([FromBody] AuthRegisterDto authRegister)
     {
+        logger.LogInformation("User registration attempt initiated.");
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+        }
+
         try
         {
-            logger.LogInformation("User registration attempt for email: {Email}", authRegister.Email);
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
-            }
-
             var response = await authService.RegisterUserAsync(authRegister);
 
-            if (response.Status.Equals("error"))
+            if (!response.Success)
             {
-                logger.LogWarning("User registration failed for email: {Email}.", authRegister.Email);
+                logger.LogWarning("Registration failed for email: {Email}.", authRegister.Email);
                 return ControllerUtil.GetActionResultFromError(response);
             }
 
-            logger.LogInformation("User registration successful for email: {Email}", authRegister.Email);
-            return StatusCode(201, response);
+            logger.LogInformation("Registration successful for email: {Email}", authRegister.Email);
+            return StatusCode(StatusCodes.Status201Created, response);
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error in registering user details for email: {Email}", authRegister.Email);
-            return Problem("An error occurred while processing your request.");
+            logger.LogError(ex, "Unexpected error occurred during user registration.");
+            return Problem("An internal server error occurred. Please try again later.");
         }
     }
 
@@ -86,36 +86,36 @@ public class AuthController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> LoginUser([FromBody] AuthLoginDto authLogin)
     {
+        logger.LogInformation("Login attempt for user.");
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+        }
+
         try
         {
-            logger.LogInformation("User login attempt for email: {Email}", authLogin.Email);
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
-            }
-
             var response = await authService.LoginUserAsync(authLogin);
 
-            if (response.Status.Equals("error"))
+            if (!response.Success)
             {
-                logger.LogWarning("User login failed for email: {Email}.", authLogin.Email);
+                logger.LogWarning("Login failed for email: {Email}.", authLogin.Email);
                 return ControllerUtil.GetActionResultFromError(response);
             }
 
-            logger.LogInformation("User login successful for email: {Email}", authLogin.Email);
+            logger.LogInformation("Login successful for email: {Email}", authLogin.Email);
             return Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error in logging in user for email: {Email}", authLogin.Email);
-            return Problem("An error occurred while processing your request.");
+            logger.LogError(ex, "Unexpected error occurred during login.");
+            return Problem("An internal server error occurred. Please try again later.");
         }
     }
 
     /// <summary>
     ///     Blacklist refresh token of the authenticated user.
     /// </summary>
-    /// <param name="refreshToken"></param>
+    /// <param name="authRefreshToken"></param>
     /// <returns> 
     ///     Returns an <see cref="IActionResult"/> containing:
     ///     - <see cref="NoContentResult"/>if the request is valid.
@@ -128,33 +128,41 @@ public class AuthController(
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> LogoutUser([FromBody][Required] string refreshToken)
+    public async Task<IActionResult> LogoutUser([FromBody] AuthRefreshTokenDto authRefreshToken)
     {
+        logger.LogInformation("Logout attempt for user.");
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+        }
+
         try
         {
-            logger.LogInformation("Attempting to Logout User.");
-            var response = await authService.LogoutUserAsync(refreshToken);
+            var isSuccess = await authService.LogoutUserAsync(authRefreshToken.Refresh);
 
-            if (!response)
+            if (!isSuccess)
             {
-                logger.LogWarning("Logout failed. Invalid refresh token.");
-                return BadRequest();
+                logger.LogWarning("Logout failed. Invalid refresh token provided.");
+                return BadRequest(new ErrorResponseDto
+                {
+                    Message = "Invalid refresh token."
+                });
             }
 
-            logger.LogInformation("User successfully logged.");
+            logger.LogInformation("User logged out successfully.");
             return NoContent();
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error in logging out user.");
-            return Problem("An error occurred while processing your request.");
+            logger.LogError(ex, "Unexpected error occurred during logout.");
+            return Problem("An internal server error occurred. Please try again later.");
         }
     }
 
     /// <summary>
     ///     Refreshes the authenticated user's tokens.
     /// </summary>
-    /// <param name="refreshToken"></param>
+    /// <param name="authRefreshToken"></param>
     /// <returns>
     ///     Returns an <see cref="IActionResult"/> containing:
     ///     - <see cref="OkObjectResult"/> if the request is valid.
@@ -171,26 +179,31 @@ public class AuthController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized,
         Type = typeof(UnauthorizedResult))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> RefreshUserTokens([FromBody][Required] string refreshToken)
+    public async Task<IActionResult> RefreshUserTokens([FromBody] AuthRefreshTokenDto authRefreshToken)
     {
+        logger.LogInformation("Token refresh attempt for user.");
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+        }
+
         try
         {
-            logger.LogInformation("Attempting to Refresh User Token.");
+            var response = await authService.RefreshUserTokensAsync(authRefreshToken.Refresh);
 
-            var response = await authService.RefreshUserTokensAsync(refreshToken);
-            if (response.Status.Equals("error"))
+            if (!response.Success)
             {
-                logger.LogWarning("Failed to refresh user token.");
+                logger.LogWarning("Token refresh failed. Invalid refresh token.");
                 return ControllerUtil.GetActionResultFromError(response);
             }
 
-            logger.LogInformation("Successfully refreshed user tokens.");
+            logger.LogInformation("Tokens refreshed successfully.");
             return Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error in renewing jwt tokens.");
-            return Problem("An error occurred while processing your request.");
+            logger.LogError(ex, "Unexpected error occurred during token refresh.");
+            return Problem("An internal server error occurred. Please try again later.");
         }
     }
 }

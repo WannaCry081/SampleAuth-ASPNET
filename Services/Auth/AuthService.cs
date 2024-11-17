@@ -1,5 +1,4 @@
 using AutoMapper;
-using System.IdentityModel.Tokens.Jwt;
 using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Entities;
@@ -8,13 +7,11 @@ using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Utils;
 
 namespace sample_auth_aspnet.Services.Auth;
-
 public class AuthService(
     ILogger<AuthService> logger,
     DataContext context,
     IMapper mapper,
-    IConfiguration configuration
-) : IAuthService
+    JWTSettings jwt) : IAuthService
 {
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
@@ -35,7 +32,7 @@ public class AuthService(
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
 
-            var authDto = TokenUtil.GenerateTokens(user, configuration);
+            var authDto = TokenUtil.GenerateTokens(user, jwt);
 
             var token = new Token
             {
@@ -43,7 +40,7 @@ public class AuthService(
                 Refresh = authDto.Refresh,
                 User = user,
                 Expiration = DateTime.UtcNow.AddDays(
-                    Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]))
+                    Convert.ToDouble(jwt.RefreshTokenExpiry))
             };
 
             user.Tokens.Add(token);
@@ -78,14 +75,14 @@ public class AuthService(
                 Error.Unauthorized, Error.ErrorType.Unauthorized, details);
         }
 
-        var authDto = TokenUtil.GenerateTokens(user, configuration);
+        var authDto = TokenUtil.GenerateTokens(user, jwt);
         var token = new Token
         {
             UserId = user.Id,
             Refresh = authDto.Refresh,
             User = user,
             Expiration = DateTime.UtcNow.AddDays(
-                Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]))
+                Convert.ToDouble(jwt.RefreshTokenExpiry))
         };
 
         await context.Tokens.AddAsync(token);
@@ -97,9 +94,9 @@ public class AuthService(
     public async Task<bool> LogoutUserAsync(string refreshToken)
     {
         var token = await context.Tokens.FirstOrDefaultAsync(
-            t => t.Refresh.Equals(refreshToken));
+            t => t.Refresh.Equals(refreshToken) && !t.IsRevoked && t.Expiration >= DateTime.UtcNow);
 
-        if (token is null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
+        if (token is null)
             return false;
 
         token.IsRevoked = true;
@@ -111,71 +108,69 @@ public class AuthService(
     public async Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(string refreshToken)
     {
         var details = new Dictionary<string, string>();
-
-        var principal = TokenUtil.ValidateRefreshToken(refreshToken, configuration);
-        if (principal is null)
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
         {
-            details.Add("token", "Invalid refresh token.");
-            return ApiResponse<AuthDto>.ErrorResponse(
-                Error.Unauthorized, Error.ErrorType.Unauthorized, details);
-        }
+            var principal = TokenUtil.ValidateRefreshToken(refreshToken, jwt);
+            if (principal is null)
+            {
+                details.Add("token", "Invalid refresh token.");
+                return ApiResponse<AuthDto>.ErrorResponse(
+                    Error.Unauthorized, Error.ErrorType.Unauthorized, details);
+            }
 
-        var token = await context.Tokens
-            .Include(t => t.User)
-            .FirstOrDefaultAsync(t => t.Refresh == refreshToken);
+            var token = await context.Tokens
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t => t.Refresh == refreshToken);
 
-        if (token is null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
-        {
-            details.Add("token", "Refresh token is already expired or invalid.");
-            return ApiResponse<AuthDto>.ErrorResponse(
-                Error.Unauthorized, Error.ErrorType.Unauthorized, details);
-        }
+            if (token is null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
+            {
+                details.Add("token", "Refresh token is already expired or invalid.");
+                return ApiResponse<AuthDto>.ErrorResponse(
+                    Error.Unauthorized, Error.ErrorType.Unauthorized, details);
+            }
 
-        var expClaim = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
-        if (string.IsNullOrEmpty(expClaim) ||
-            !long.TryParse(expClaim, out var expSeconds) ||
-            DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime < DateTime.UtcNow.AddMinutes(10))
-        {
+            if (!TokenUtil.IsTokenNearExpiration(principal, bufferMinutes: 10))
+            {
+                var newAccessToken = new AuthDto
+                {
+                    Access = TokenUtil.GenerateAccess(token.User, jwt),
+                    Refresh = refreshToken
+                };
+
+                return ApiResponse<AuthDto>.SuccessResponse(newAccessToken, Success.IS_AUTHENTICATED);
+            }
+
             var user = token.User;
-            var newTokensGenerated = TokenUtil.GenerateTokens(user, configuration);
-
             token.IsRevoked = true;
 
+            var newTokensGenerated = TokenUtil.GenerateTokens(user, jwt);
             var newRefreshToken = new Token
             {
                 UserId = user.Id,
                 Refresh = newTokensGenerated.Refresh,
-                Expiration = DateTime.UtcNow.AddDays(Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]))
+                Expiration = DateTime.UtcNow.AddDays(jwt.RefreshTokenExpiry)
             };
 
-            user.Tokens.Add(newRefreshToken);
             await context.Tokens.AddAsync(newRefreshToken);
             await context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
-            return ApiResponse<AuthDto>.SuccessResponse(
-                newTokensGenerated, Success.IS_AUTHENTICATED);
+            return ApiResponse<AuthDto>.SuccessResponse(newTokensGenerated, Success.IS_AUTHENTICATED);
         }
-
-        var newAccessToken = new AuthDto
+        catch (Exception ex)
         {
-            Access = TokenUtil.GenerateAccess(token.User, configuration),
-            Refresh = refreshToken
-        };
-
-        return ApiResponse<AuthDto>.SuccessResponse(
-            newAccessToken, Success.IS_AUTHENTICATED);
+            await transaction.RollbackAsync();
+            logger.LogError(ex, "Error refreshing user's token.");
+            return ApiResponse<AuthDto>.ErrorResponse(
+                Error.ERROR_CREATING_RESOURCE("Token"), Error.ErrorType.InternalServer);
+        }
     }
 
     public async Task RemoveRevokedTokenAsync()
     {
-        var tokens = await context.Tokens
+        await context.Tokens
             .Where(t => t.IsRevoked || t.Expiration < DateTime.UtcNow)
-            .ToListAsync();
-
-        if (tokens.Count != 0)
-        {
-            context.Tokens.RemoveRange(tokens);
-            await context.SaveChangesAsync();
-        }
+            .ExecuteDeleteAsync();
     }
 }

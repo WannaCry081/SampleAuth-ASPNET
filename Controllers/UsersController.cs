@@ -35,17 +35,17 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetUserDetails()
     {
+        var userId = ControllerUtil.GetUserId(User);
+        if (userId == -1)
+        {
+            logger.LogWarning("Unauthorized access attempt.");
+            return Unauthorized(new { message = "User is not authenticated." });
+        }
+
+        logger.LogInformation("Fetching user details for userId: {UserId}", userId);
+
         try
         {
-            var userId = ControllerUtil.GetUserId(User);
-            logger.LogInformation("User details fetch attempt for userId: {UserId}", userId);
-
-            if (userId == -1)
-            {
-                logger.LogWarning("Unauthorized access attempt for userId: {UserId}", userId);
-                return Unauthorized();
-            }
-
             var response = await userService.GetUserDetailsAsync(userId);
 
             logger.LogInformation("Successfully fetched user details for userId: {UserId}", userId);
@@ -53,8 +53,8 @@ public class UsersController(
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error in fetching user's details.");
-            return Problem("An error occurred while processing your request.");
+            logger.LogError(ex, "Error while fetching user details for userId: {UserId}", userId);
+            return Problem("An internal server error occurred. Please try again later.");
         }
     }
 }

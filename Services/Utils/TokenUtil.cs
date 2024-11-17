@@ -9,7 +9,7 @@ namespace sample_auth_aspnet.Services.Utils;
 
 public static class TokenUtil
 {
-    private static string GenerateToken(User user, DateTime expires, IConfiguration configuration, bool isAccessToken = true)
+    private static string GenerateToken(User user, DateTime expires, JWTSettings jwt, bool isAccessToken = true)
     {
         var claims = new List<Claim>
         {
@@ -26,12 +26,12 @@ public static class TokenUtil
             claims.Add(new(ClaimTypes.NameIdentifier, user.Id.ToString()));
         }
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Key"]!));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: configuration["JWT:Issuer"],
-            audience: configuration["JWT:Audience"],
+            issuer: jwt.Issuer,
+            audience: jwt.Audience,
             claims: claims,
             expires: expires,
             signingCredentials: creds
@@ -40,35 +40,35 @@ public static class TokenUtil
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public static string GenerateAccess(User user, IConfiguration configuration)
+    public static string GenerateAccess(User user, JWTSettings jwt)
     {
         var expiry = DateTime.UtcNow.AddHours(
-            Convert.ToDouble(configuration["JWT:AccessTokenExpiry"]));
+            Convert.ToDouble(jwt.AccessTokenExpiry));
 
-        return GenerateToken(user, expiry, configuration);
+        return GenerateToken(user, expiry, jwt);
     }
 
-    public static string GenerateRefresh(User user, IConfiguration configuration)
+    public static string GenerateRefresh(User user, JWTSettings jwt)
     {
         var expiry = DateTime.UtcNow.AddDays(
-            Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]));
+            Convert.ToDouble(jwt.RefreshTokenExpiry));
 
-        return GenerateToken(user, expiry, configuration, isAccessToken: false);
+        return GenerateToken(user, expiry, jwt, isAccessToken: false);
     }
 
-    public static AuthDto GenerateTokens(User user, IConfiguration configuration)
+    public static AuthDto GenerateTokens(User user, JWTSettings jwt)
     {
         return new AuthDto
         {
-            Access = GenerateAccess(user, configuration),
-            Refresh = GenerateRefresh(user, configuration)
+            Access = GenerateAccess(user, jwt),
+            Refresh = GenerateRefresh(user, jwt)
         };
     }
 
-    public static ClaimsPrincipal? ValidateRefreshToken(string refreshToken, IConfiguration configuration)
+    public static ClaimsPrincipal? ValidateRefreshToken(string refreshToken, JWTSettings jwt)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(configuration["JWT:Key"]!);
+        var key = Encoding.UTF8.GetBytes(jwt.Secret);
 
         try
         {
@@ -77,9 +77,9 @@ public static class TokenUtil
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
                 ValidateIssuer = true,
-                ValidIssuer = configuration["JWT:Issuer"],
+                ValidIssuer = jwt.Issuer,
                 ValidateAudience = true,
-                ValidAudience = configuration["JWT:Audience"],
+                ValidAudience = jwt.Audience,
                 ValidateLifetime = true,
             }, out SecurityToken validatedToken);
 
@@ -90,4 +90,17 @@ public static class TokenUtil
             return null;
         }
     }
+
+    public static bool IsTokenNearExpiration(ClaimsPrincipal principal, int bufferMinutes)
+    {
+        var expClaim = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
+        if (string.IsNullOrEmpty(expClaim) || !long.TryParse(expClaim, out var expSeconds))
+        {
+            return true; // Treat missing or invalid exp claim as "expired"
+        }
+
+        var expirationTime = DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime;
+        return expirationTime < DateTime.UtcNow.AddMinutes(bufferMinutes);
+    }
+
 }
