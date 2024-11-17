@@ -162,7 +162,7 @@ public class AuthController(
     /// <summary>
     ///     Refreshes the authenticated user's tokens.
     /// </summary>
-    /// <param name="refreshToken"></param>
+    /// <param name="authRefreshToken"></param>
     /// <returns>
     ///     Returns an <see cref="IActionResult"/> containing:
     ///     - <see cref="OkObjectResult"/> if the request is valid.
@@ -179,26 +179,31 @@ public class AuthController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized,
         Type = typeof(UnauthorizedResult))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> RefreshUserTokens([FromBody][Required] string refreshToken)
+    public async Task<IActionResult> RefreshUserTokens([FromBody] AuthRefreshTokenDto authRefreshToken)
     {
+        logger.LogInformation("Token refresh attempt for user.");
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+        }
+
         try
         {
-            logger.LogInformation("Attempting to Refresh User Token.");
+            var response = await authService.RefreshUserTokensAsync(authRefreshToken.Refresh);
 
-            var response = await authService.RefreshUserTokensAsync(refreshToken);
             if (response.Status.Equals("error"))
             {
-                logger.LogWarning("Failed to refresh user token.");
+                logger.LogWarning("Token refresh failed. Invalid refresh token.");
                 return ControllerUtil.GetActionResultFromError(response);
             }
 
-            logger.LogInformation("Successfully refreshed user tokens.");
+            logger.LogInformation("Tokens refreshed successfully.");
             return Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error in renewing jwt tokens.");
-            return Problem("An error occurred while processing your request.");
+            logger.LogError(ex, "Unexpected error occurred during token refresh.");
+            return Problem("An internal server error occurred. Please try again later.");
         }
     }
 }
