@@ -111,7 +111,7 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
 
     #region Authentication
     var jwt = configuration.GetSection("JWT");
-    var key = jwt["Key"];
+    var key = jwt["Secret"];
 
     services.AddAuthentication(options =>
     {
