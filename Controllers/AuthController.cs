@@ -261,6 +261,7 @@ public class AuthController(
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetUserPassword([FromQuery] string resetToken, [FromBody] AuthResetPasswordDto authResetPassword)
     {
+        logger.LogInformation("Reset password request initiated for user.");
         if (!ModelState.IsValid)
             return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
 
@@ -271,9 +272,11 @@ public class AuthController(
 
             if (!response.Success)
             {
+                logger.LogWarning("Failed to reset user's password.");
                 return ControllerUtil.GetActionResultFromError(response);
             }
 
+            logger.LogInformation("Reset user's password successfully");
             return Ok(response);
         }
         catch (Exception ex)
