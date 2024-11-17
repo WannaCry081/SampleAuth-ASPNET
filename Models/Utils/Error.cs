@@ -25,4 +25,9 @@ public static class Error
     {
         return $"Error in creating {field}.";
     }
+
+    public static string ENTITY_NOT_FOUND(string field)
+    {
+        return $"{field} resource not found.";
+    }
 }
