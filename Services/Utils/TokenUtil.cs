@@ -41,22 +41,6 @@ public static class TokenUtil
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public static string GenerateAccess(User user, JWTSettings jwt)
-    {
-        var expiry = DateTime.UtcNow.AddHours(
-            Convert.ToDouble(jwt.AccessTokenExpiry));
-
-        return GenerateToken(user, expiry, jwt);
-    }
-
-    public static string GenerateRefresh(User user, JWTSettings jwt)
-    {
-        var expiry = DateTime.UtcNow.AddDays(
-            Convert.ToDouble(jwt.RefreshTokenExpiry));
-
-        return GenerateToken(user, expiry, jwt, isAccessToken: false);
-    }
-
     public static AuthDto GenerateTokens(User user, JWTSettings jwt)
     {
         return new AuthDto
