@@ -8,13 +8,11 @@ using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Utils;
 
 namespace sample_auth_aspnet.Services.Auth;
-
 public class AuthService(
     ILogger<AuthService> logger,
     DataContext context,
     IMapper mapper,
-    IConfiguration configuration
-) : IAuthService
+    JWTSettings jwt) : IAuthService
 {
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
@@ -35,7 +33,7 @@ public class AuthService(
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
 
-            var authDto = TokenUtil.GenerateTokens(user, configuration);
+            var authDto = TokenUtil.GenerateTokens(user, jwt);
 
             var token = new Token
             {
@@ -43,7 +41,7 @@ public class AuthService(
                 Refresh = authDto.Refresh,
                 User = user,
                 Expiration = DateTime.UtcNow.AddDays(
-                    Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]))
+                    Convert.ToDouble(jwt.RefreshTokenExpiry))
             };
 
             user.Tokens.Add(token);
@@ -78,14 +76,14 @@ public class AuthService(
                 Error.Unauthorized, Error.ErrorType.Unauthorized, details);
         }
 
-        var authDto = TokenUtil.GenerateTokens(user, configuration);
+        var authDto = TokenUtil.GenerateTokens(user, jwt);
         var token = new Token
         {
             UserId = user.Id,
             Refresh = authDto.Refresh,
             User = user,
             Expiration = DateTime.UtcNow.AddDays(
-                Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]))
+                Convert.ToDouble(jwt.RefreshTokenExpiry))
         };
 
         await context.Tokens.AddAsync(token);
@@ -112,7 +110,7 @@ public class AuthService(
     {
         var details = new Dictionary<string, string>();
 
-        var principal = TokenUtil.ValidateRefreshToken(refreshToken, configuration);
+        var principal = TokenUtil.ValidateRefreshToken(refreshToken, jwt);
         if (principal is null)
         {
             details.Add("token", "Invalid refresh token.");
@@ -137,7 +135,7 @@ public class AuthService(
             DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime < DateTime.UtcNow.AddMinutes(10))
         {
             var user = token.User;
-            var newTokensGenerated = TokenUtil.GenerateTokens(user, configuration);
+            var newTokensGenerated = TokenUtil.GenerateTokens(user, jwt);
 
             token.IsRevoked = true;
 
@@ -145,7 +143,7 @@ public class AuthService(
             {
                 UserId = user.Id,
                 Refresh = newTokensGenerated.Refresh,
-                Expiration = DateTime.UtcNow.AddDays(Convert.ToDouble(configuration["JWT:RefreshTokenExpiry"]))
+                Expiration = DateTime.UtcNow.AddDays(Convert.ToDouble(jwt.RefreshTokenExpiry))
             };
 
             user.Tokens.Add(newRefreshToken);
@@ -158,7 +156,7 @@ public class AuthService(
 
         var newAccessToken = new AuthDto
         {
-            Access = TokenUtil.GenerateAccess(token.User, configuration),
+            Access = TokenUtil.GenerateAccess(token.User, jwt),
             Refresh = refreshToken
         };
 
