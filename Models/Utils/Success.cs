@@ -3,7 +3,7 @@ namespace sample_auth_aspnet.Models.Utils;
 public static class Success
 {
     public const string IS_AUTHENTICATED = "User is successfully authenticated.";
-
+    public const string EMAILED_SUCCESSFULLY = "Email sent successfully";
 
     public static string ENTITY_CREATED(string entity)
     {
