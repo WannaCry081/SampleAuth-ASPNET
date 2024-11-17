@@ -258,7 +258,27 @@ public class AuthController(
         }
     }
 
+    /// <summary>
+    ///     Reset user's password.
+    /// </summary>
+    /// <param name="resetToken"></param>
+    /// <param name="authResetPassword"></param>
+    /// <returns>
+    ///     Returns an <see cref="IActionResult"/> containing:
+    ///     - <see cref="OkObjectResult"/> if the request is valid.
+    ///     - <see cref="BadRequestObjectResult"/> if the request is invalid.
+    ///     - <see cref="UnauthorizedObjectResult"/> if an the credential is invalid.
+    ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
+    /// </returns>
     [HttpPost("reset-password")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(SuccessResponseDto<AuthDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest,
+        Type = typeof(ErrorResponseDto))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized,
+        Type = typeof(ErrorResponseDto))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ResetUserPassword([FromQuery] string resetToken, [FromBody] AuthResetPasswordDto authResetPassword)
     {
         logger.LogInformation("Reset password request initiated for user.");
