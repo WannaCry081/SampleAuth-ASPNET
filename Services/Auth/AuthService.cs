@@ -134,8 +134,9 @@ public class AuthService(
             {
                 var newAccessToken = new AuthDto
                 {
-                    Access = TokenUtil.GenerateAccess(token.User, jwt),
-                    Refresh = refreshToken
+                    Refresh = refreshToken,
+                    Access = TokenUtil.GenerateToken(
+                        token.User, jwt, TokenUtil.TokenType.ACCESS)
                 };
 
                 return ApiResponse<AuthDto>.SuccessResponse(newAccessToken, Success.IS_AUTHENTICATED);
