@@ -1,17 +1,17 @@
 global using Microsoft.EntityFrameworkCore;
-using System.Text;
+using System.Reflection;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Services.Auth;
 using Newtonsoft.Json.Converters;
 using Microsoft.OpenApi.Models;
-using System.Reflection;
+using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Users;
-using sample_auth_aspnet.Services.Utils;
-using Microsoft.Extensions.Options;
+using sample_auth_aspnet.Services.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -130,7 +130,8 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwt["Issuer"],
             ValidAudience = jwt["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!))
+            ClockSkew = TimeSpan.Zero,
+            IssuerSigningKey = new SymmetricSecurityKey(Base64UrlEncoder.DecodeBytes(key!))
         };
     });
     #endregion
@@ -148,8 +149,18 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     services.Configure<JWTSettings>(configuration.GetSection("JWT"));
     services.AddSingleton(resolver =>
         resolver.GetRequiredService<IOptions<JWTSettings>>().Value);
+    #endregion
 
-    services.AddTransient<DataContext>();
+    #region SMTP Data Binding 
+    services.Configure<SMTPSettings>(configuration.GetSection("SMTP"));
+    services.AddSingleton(resolver =>
+        resolver.GetRequiredService<IOptions<SMTPSettings>>().Value);
+    #endregion
+
+    #region Application Data Binding
+    services.Configure<ApplicationSettings>(configuration.GetSection("Application"));
+    services.AddSingleton(resolver =>
+        resolver.GetRequiredService<IOptions<ApplicationSettings>>().Value);
     #endregion
 
     #region Background Service 
@@ -157,6 +168,7 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     #endregion
 
     #region Services Configuration
+    services.AddScoped<IEmailService, EmailService>();
     services.AddScoped<IAuthService, AuthService>();
     services.AddScoped<IUserService, UserService>();
     #endregion

@@ -3,15 +3,19 @@ using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Entities;
 using sample_auth_aspnet.Models.Response;
+using sample_auth_aspnet.Services.Email;
 using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Utils;
+using System.Security.Claims;
 
 namespace sample_auth_aspnet.Services.Auth;
 public class AuthService(
+    IEmailService emailService,
     ILogger<AuthService> logger,
     DataContext context,
     IMapper mapper,
-    JWTSettings jwt) : IAuthService
+    JWTSettings jwt,
+    ApplicationSettings app) : IAuthService
 {
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
@@ -28,24 +32,11 @@ public class AuthService(
 
             var user = mapper.Map<User>(authRegister);
             user.Password = PasswordUtil.HashPassword(user.Password);
-
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
 
             var authDto = TokenUtil.GenerateTokens(user, jwt);
-
-            var token = new Token
-            {
-                UserId = user.Id,
-                Refresh = authDto.Refresh,
-                User = user,
-                Expiration = DateTime.UtcNow.AddDays(
-                    Convert.ToDouble(jwt.RefreshTokenExpiry))
-            };
-
-            user.Tokens.Add(token);
-            await context.Tokens.AddAsync(token);
-            await context.SaveChangesAsync();
+            await SaveRefreshTokenAsync(user, authDto.Refresh, jwt.RefreshTokenExpiry);
             await transaction.CommitAsync();
 
             return ApiResponse<AuthDto>.SuccessResponse(
@@ -76,17 +67,8 @@ public class AuthService(
         }
 
         var authDto = TokenUtil.GenerateTokens(user, jwt);
-        var token = new Token
-        {
-            UserId = user.Id,
-            Refresh = authDto.Refresh,
-            User = user,
-            Expiration = DateTime.UtcNow.AddDays(
-                Convert.ToDouble(jwt.RefreshTokenExpiry))
-        };
+        await SaveRefreshTokenAsync(user, authDto.Refresh, jwt.RefreshTokenExpiry);
 
-        await context.Tokens.AddAsync(token);
-        await context.SaveChangesAsync();
         return ApiResponse<AuthDto>.SuccessResponse(
             authDto, Success.IS_AUTHENTICATED);
     }
@@ -111,7 +93,7 @@ public class AuthService(
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            var principal = TokenUtil.ValidateRefreshToken(refreshToken, jwt);
+            var principal = TokenUtil.ValidateToken(refreshToken, jwt);
             if (principal is null)
             {
                 details.Add("token", "Invalid refresh token.");
@@ -134,8 +116,9 @@ public class AuthService(
             {
                 var newAccessToken = new AuthDto
                 {
-                    Access = TokenUtil.GenerateAccess(token.User, jwt),
-                    Refresh = refreshToken
+                    Refresh = refreshToken,
+                    Access = TokenUtil.GenerateToken(
+                        token.User, jwt, TokenUtil.TokenType.ACCESS)
                 };
 
                 return ApiResponse<AuthDto>.SuccessResponse(newAccessToken, Success.IS_AUTHENTICATED);
@@ -144,19 +127,11 @@ public class AuthService(
             var user = token.User;
             token.IsRevoked = true;
 
-            var newTokensGenerated = TokenUtil.GenerateTokens(user, jwt);
-            var newRefreshToken = new Token
-            {
-                UserId = user.Id,
-                Refresh = newTokensGenerated.Refresh,
-                Expiration = DateTime.UtcNow.AddDays(jwt.RefreshTokenExpiry)
-            };
-
-            await context.Tokens.AddAsync(newRefreshToken);
-            await context.SaveChangesAsync();
+            var authDto = TokenUtil.GenerateTokens(user, jwt);
+            await SaveRefreshTokenAsync(user, authDto.Refresh, jwt.RefreshTokenExpiry);
             await transaction.CommitAsync();
 
-            return ApiResponse<AuthDto>.SuccessResponse(newTokensGenerated, Success.IS_AUTHENTICATED);
+            return ApiResponse<AuthDto>.SuccessResponse(authDto, Success.IS_AUTHENTICATED);
         }
         catch (Exception ex)
         {
@@ -167,10 +142,105 @@ public class AuthService(
         }
     }
 
+    public async Task<ApiResponse<object?>> ForgotUserPasswordAsync(string email)
+    {
+        var user = await context.Users
+            .FirstOrDefaultAsync(u => u.Email.Equals(email));
+
+        if (user is null)
+            return ApiResponse<object?>.ErrorResponse(
+                Error.NotFound, Error.ErrorType.NotFound);
+
+
+        var resetToken = TokenUtil.GenerateToken(user, jwt, TokenUtil.TokenType.RESET);
+        var resetLink = $"{app.Url}?token={resetToken}";
+
+        var isEmailSent = await emailService.SendResetEmailAsync(email, resetLink);
+        if (!isEmailSent)
+            return ApiResponse<object?>.ErrorResponse(
+                Error.ValidationError, Error.ErrorType.ValidationError);
+
+        return ApiResponse<object?>.SuccessResponse(null, Success.EMAILED_SUCCESSFULLY);
+    }
+
+    public async Task<ApiResponse<AuthDto>> ResetUserPasswordAsync(
+    string resetToken, AuthResetPasswordDto authResetPassword)
+    {
+        const string ResetPasswordPurpose = "reset-password";
+        var details = new Dictionary<string, string>();
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+
+            var principal = TokenUtil.ValidateToken(resetToken, jwt);
+            if (principal is null)
+            {
+                details.Add("token", "Invalid or expired reset token.");
+                return ApiResponse<AuthDto>.ErrorResponse(
+                    Error.Unauthorized, Error.ErrorType.Unauthorized, details);
+            }
+
+            var purposeClaim = principal.Claims.FirstOrDefault(c => c.Type == "Purpose")?.Value;
+            if (string.IsNullOrEmpty(purposeClaim) || purposeClaim != ResetPasswordPurpose)
+            {
+                details.Add("token", "Invalid token purpose.");
+                return ApiResponse<AuthDto>.ErrorResponse(
+                    Error.Unauthorized, Error.ErrorType.Unauthorized, details);
+            }
+
+            var emailClaim = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(emailClaim))
+            {
+                details.Add("token", "Invalid email information in reset token.");
+                return ApiResponse<AuthDto>.ErrorResponse(
+                    Error.Unauthorized, Error.ErrorType.Unauthorized, details);
+            }
+
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Email.Equals(emailClaim));
+            if (user is null)
+            {
+                details.Add("token", "User not found.");
+                return ApiResponse<AuthDto>.ErrorResponse(
+                    Error.Unauthorized, Error.ErrorType.Unauthorized, details);
+            }
+
+            user.Password = PasswordUtil.HashPassword(authResetPassword.Password);
+            await context.SaveChangesAsync();
+
+            var authDto = TokenUtil.GenerateTokens(user, jwt);
+            await SaveRefreshTokenAsync(user, authDto.Refresh, jwt.RefreshTokenExpiry);
+            await transaction.CommitAsync();
+
+            return ApiResponse<AuthDto>.SuccessResponse(
+                authDto, Success.IS_AUTHENTICATED);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            logger.LogError(ex, "Error resettings user's password.");
+            return ApiResponse<AuthDto>.ErrorResponse(
+                Error.ERROR_UPDATING_RESOURCE("User"), Error.ErrorType.InternalServer);
+        }
+    }
+
     public async Task RemoveRevokedTokenAsync()
     {
         await context.Tokens
             .Where(t => t.IsRevoked || t.Expiration < DateTime.UtcNow)
             .ExecuteDeleteAsync();
+    }
+
+    private async Task SaveRefreshTokenAsync(User user, string refreshToken, int expiryDays)
+    {
+        var token = new Token
+        {
+            UserId = user.Id,
+            Refresh = refreshToken,
+            Expiration = DateTime.UtcNow.AddDays(expiryDays)
+        };
+
+        user.Tokens.Add(token);
+        await context.Tokens.AddAsync(token);
+        await context.SaveChangesAsync();
     }
 }

@@ -24,7 +24,7 @@ public class AuthController(
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
     /// <response code="201">Returns the access and refresh tokens.</response>
-    /// <response code="404">Unauthorized access.</response>
+    /// <response code="400">Bad request.</response>
     /// <response code="500">Internal server error.</response>
     [HttpPost("register")]
     [Consumes("application/json")]
@@ -37,11 +37,8 @@ public class AuthController(
     public async Task<IActionResult> RegisterUser([FromBody] AuthRegisterDto authRegister)
     {
         logger.LogInformation("User registration attempt initiated.");
-
         if (!ModelState.IsValid)
-        {
-            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
-        }
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
 
         try
         {
@@ -70,10 +67,12 @@ public class AuthController(
     /// <returns>
     ///     Returns an <see cref="IActionResult"/> containing:
     ///     - <see cref="OkObjectResult"/> with the access and refresh tokens.
+    ///     - <see cref="BadRequestObjectResult"/> if the request is invalid. 
     ///     - <see cref="UnauthorizedObjectResult"/> if the user entered invalid credentials.
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
     /// <response code="200">Returns the access and refresh tokens.</response>
+    /// <response code="400">Bad request.</response>
     /// <response code="401">Unauthorized access.</response>
     /// <response code="500">Internal server error.</response>
     [HttpPost("login")]
@@ -81,6 +80,8 @@ public class AuthController(
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(SuccessResponseDto<AuthDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest,
+        Type = typeof(ErrorResponseDto))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized,
         Type = typeof(ErrorResponseDto))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -88,9 +89,7 @@ public class AuthController(
     {
         logger.LogInformation("Login attempt for user.");
         if (!ModelState.IsValid)
-        {
-            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
-        }
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
 
         try
         {
@@ -118,23 +117,23 @@ public class AuthController(
     /// <param name="authRefreshToken"></param>
     /// <returns> 
     ///     Returns an <see cref="IActionResult"/> containing:
-    ///     - <see cref="NoContentResult"/>if the request is valid.
+    ///     - <see cref="NoContentResult"/> if the request is valid.
+    ///     - <see cref="BadRequestObjectResult"/> if the request is invalid.
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
     /// <response code="204">No content.</response>
-    /// <response code="401">Unauthorized access.</response>
+    /// <response code="400">Bad request.</response>
     /// <response code="500">Internal server error.</response>
     [HttpPost("logout")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> LogoutUser([FromBody] AuthRefreshTokenDto authRefreshToken)
     {
         logger.LogInformation("Logout attempt for user.");
         if (!ModelState.IsValid)
-        {
-            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
-        }
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
 
         try
         {
@@ -143,7 +142,7 @@ public class AuthController(
             if (!isSuccess)
             {
                 logger.LogWarning("Logout failed. Invalid refresh token provided.");
-                return BadRequest(new ErrorResponseDto
+                return BadRequest(new
                 {
                     Message = "Invalid refresh token."
                 });
@@ -166,16 +165,19 @@ public class AuthController(
     /// <returns>
     ///     Returns an <see cref="IActionResult"/> containing:
     ///     - <see cref="OkObjectResult"/> if the request is valid.
+    ///     - <see cref="BadRequestObjectResult"/> if the request is invalid.
     ///     - <see cref="UnauthorizedObjectResult"/> if an the credential is invalid.
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
     /// <response code="200">Returns the new access and refresh tokens.</response>
+    /// <response code="400">Bad request.</response>
     /// <response code="401">Unauthorized access.</response>
     /// <response code="500">Internal server error.</response>
     [HttpPost("refresh")]
     [Consumes("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(SuccessResponseDto<AuthDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized,
         Type = typeof(UnauthorizedResult))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -183,9 +185,7 @@ public class AuthController(
     {
         logger.LogInformation("Token refresh attempt for user.");
         if (!ModelState.IsValid)
-        {
-            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
-        }
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
 
         try
         {
@@ -203,6 +203,105 @@ public class AuthController(
         catch (Exception ex)
         {
             logger.LogError(ex, "Unexpected error occurred during token refresh.");
+            return Problem("An internal server error occurred. Please try again later.");
+        }
+    }
+
+    /// <summary>
+    ///     Send an email containing the reset password link.
+    /// </summary>
+    /// <param name="authForgotPassword"></param>
+    /// <returns>
+    ///     Returns an <see cref="IActionResult" /> containing:
+    ///     - <see cref="OkObjectResult"/> if the request is valid.
+    ///     - <see cref="BadRequestObjectResult"/> if the request is invalid.
+    ///     - <see cref="NotFoundObjectResult"/> if the request do not exists.
+    ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
+    /// </returns>
+    /// <response code="200">Returns the new access and refresh tokens.</response>
+    /// <response code="400">Bad request.</response>
+    /// <response code="404">No resource found.</response>
+    /// <response code="500">Internal server error.</response>
+    [HttpPost("forgot-password")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(SuccessResponseDto<object?>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest,
+        Type = typeof(ErrorResponseDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound,
+        Type = typeof(ErrorResponseDto))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> ForgotUserPassword([FromBody] AuthForgotPasswordDto authForgotPassword)
+    {
+        logger.LogInformation("Forgot password request initiated for user.");
+
+        if (!ModelState.IsValid)
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
+
+        try
+        {
+            var response = await authService.ForgotUserPasswordAsync(authForgotPassword.Email);
+
+            if (!response.Success)
+            {
+                logger.LogWarning("Failed to send email to {Email}. The email might not be registered.", authForgotPassword.Email);
+                return ControllerUtil.GetActionResultFromError(response);
+            }
+
+            logger.LogInformation("Forgot password email sent successfully to {Email}.", authForgotPassword.Email);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error occurred during forgot password request for {Email}.", authForgotPassword.Email);
+            return Problem("An internal server error occurred. Please try again later.");
+        }
+    }
+
+    /// <summary>
+    ///     Reset user's password.
+    /// </summary>
+    /// <param name="resetToken"></param>
+    /// <param name="authResetPassword"></param>
+    /// <returns>
+    ///     Returns an <see cref="IActionResult"/> containing:
+    ///     - <see cref="OkObjectResult"/> if the request is valid.
+    ///     - <see cref="BadRequestObjectResult"/> if the request is invalid.
+    ///     - <see cref="UnauthorizedObjectResult"/> if an the credential is invalid.
+    ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
+    /// </returns>
+    [HttpPost("reset-password")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(SuccessResponseDto<AuthDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest,
+        Type = typeof(ErrorResponseDto))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized,
+        Type = typeof(ErrorResponseDto))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> ResetUserPassword([FromQuery] string resetToken, [FromBody] AuthResetPasswordDto authResetPassword)
+    {
+        logger.LogInformation("Reset password request initiated for user.");
+        if (!ModelState.IsValid)
+            return BadRequest(ControllerUtil.ValidateRequest<object>(ModelState));
+
+        try
+        {
+            var response = await authService.ResetUserPasswordAsync(
+                resetToken, authResetPassword);
+
+            if (!response.Success)
+            {
+                logger.LogWarning("Failed to reset user's password.");
+                return ControllerUtil.GetActionResultFromError(response);
+            }
+
+            logger.LogInformation("Reset user's password successfully");
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error occurred during resetting user's password");
             return Problem("An internal server error occurred. Please try again later.");
         }
     }

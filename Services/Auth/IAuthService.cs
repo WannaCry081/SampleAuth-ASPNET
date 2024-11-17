@@ -42,6 +42,26 @@ public interface IAuthService
     Task<ApiResponse<AuthDto>> RefreshUserTokensAsync(string refreshToken);
 
     /// <summary>
+    ///     Send an reset password email.
+    /// </summary>
+    /// <param name="email"></param>
+    /// <returns>
+    ///     Confirmation message if the SMTP send an email.
+    /// </returns>
+    Task<ApiResponse<object?>> ForgotUserPasswordAsync(string email);
+
+    /// <summary>
+    ///     Reset user's password.
+    /// </summary>
+    /// <param name="resetToken"></param>
+    /// <param name="authResetPassword"></param>
+    /// <returns>
+    ///     An access and refresh tokens if password reset is successful.
+    /// </returns>
+    Task<ApiResponse<AuthDto>> ResetUserPasswordAsync(
+        string resetToken, AuthResetPasswordDto authResetPassword);
+
+    /// <summary>
     ///     Remove user's revoked tokens.
     /// </summary>
     Task RemoveRevokedTokenAsync();

@@ -1,32 +1,58 @@
-using System.Text;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
-using sample_auth_aspnet.Models.Entities;
 using System.IdentityModel.Tokens.Jwt;
+using sample_auth_aspnet.Models.Entities;
 using sample_auth_aspnet.Models.Dtos.Auth;
+using sample_auth_aspnet.Models.Utils;
 
 namespace sample_auth_aspnet.Services.Utils;
 
 public static class TokenUtil
 {
-    private static string GenerateToken(User user, DateTime expires, JWTSettings jwt, bool isAccessToken = true)
+    public enum TokenType
     {
+        REFRESH,
+        ACCESS,
+        RESET
+    }
+
+    public static string GenerateToken(User user, JWTSettings jwt, TokenType type)
+    {
+        DateTime expires = DateTime.UtcNow;
+
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(
-                DateTime.UtcNow).ToUnixTimeSeconds().ToString(),
-                ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Iat,
+                new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(),
+                ClaimValueTypes.Integer64)
         };
 
-        if (isAccessToken)
+        switch (type)
         {
-            claims.Add(new(ClaimTypes.Email, user.Email));
-            claims.Add(new(ClaimTypes.NameIdentifier, user.Id.ToString()));
+            case TokenType.REFRESH:
+                expires = expires.AddDays(jwt.RefreshTokenExpiry);
+                break;
+
+            case TokenType.ACCESS:
+                expires = expires.AddHours(jwt.AccessTokenExpiry);
+                claims.Add(new(ClaimTypes.Email, user.Email));
+                claims.Add(new(ClaimTypes.NameIdentifier, user.Id.ToString()));
+                break;
+
+            case TokenType.RESET:
+                expires = expires.AddMinutes(jwt.ResetTokenExpiry);
+                claims.Add(new(ClaimTypes.Email, user.Email));
+                claims.Add(new("Purpose", "reset-password"));
+                break;
         }
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Secret));
+        claims.Add(new(JwtRegisteredClaimNames.Exp,
+            new DateTimeOffset(expires).ToUnixTimeSeconds().ToString(),
+            ClaimValueTypes.Integer64));
+
+        var key = new SymmetricSecurityKey(Base64UrlEncoder.DecodeBytes(jwt.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
@@ -40,39 +66,23 @@ public static class TokenUtil
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public static string GenerateAccess(User user, JWTSettings jwt)
-    {
-        var expiry = DateTime.UtcNow.AddHours(
-            Convert.ToDouble(jwt.AccessTokenExpiry));
-
-        return GenerateToken(user, expiry, jwt);
-    }
-
-    public static string GenerateRefresh(User user, JWTSettings jwt)
-    {
-        var expiry = DateTime.UtcNow.AddDays(
-            Convert.ToDouble(jwt.RefreshTokenExpiry));
-
-        return GenerateToken(user, expiry, jwt, isAccessToken: false);
-    }
-
     public static AuthDto GenerateTokens(User user, JWTSettings jwt)
     {
         return new AuthDto
         {
-            Access = GenerateAccess(user, jwt),
-            Refresh = GenerateRefresh(user, jwt)
+            Access = GenerateToken(user, jwt, TokenType.ACCESS),
+            Refresh = GenerateToken(user, jwt, TokenType.REFRESH)
         };
     }
 
-    public static ClaimsPrincipal? ValidateRefreshToken(string refreshToken, JWTSettings jwt)
+    public static ClaimsPrincipal? ValidateToken(string token, JWTSettings jwt)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(jwt.Secret);
+        var key = Base64UrlEncoder.DecodeBytes(jwt.Secret);
 
         try
         {
-            var principal = tokenHandler.ValidateToken(refreshToken, new TokenValidationParameters
+            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
@@ -81,6 +91,7 @@ public static class TokenUtil
                 ValidateAudience = true,
                 ValidAudience = jwt.Audience,
                 ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
             }, out SecurityToken validatedToken);
 
             return principal;
@@ -96,7 +107,7 @@ public static class TokenUtil
         var expClaim = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
         if (string.IsNullOrEmpty(expClaim) || !long.TryParse(expClaim, out var expSeconds))
         {
-            return true; // Treat missing or invalid exp claim as "expired"
+            return true;
         }
 
         var expirationTime = DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime;
