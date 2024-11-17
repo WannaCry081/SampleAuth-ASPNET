@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
 using sample_auth_aspnet.Controllers.Utils;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Dtos.Reponse;
@@ -37,29 +36,30 @@ public class AuthController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RegisterUser([FromBody] AuthRegisterDto authRegister)
     {
+        logger.LogInformation("User registration attempt initiated.");
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
+        }
+
         try
         {
-            logger.LogInformation("User registration attempt for email: {Email}", authRegister.Email);
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ControllerUtil.ValidateRequest<AuthDto>(ModelState));
-            }
-
             var response = await authService.RegisterUserAsync(authRegister);
 
             if (response.Status.Equals("error"))
             {
-                logger.LogWarning("User registration failed for email: {Email}.", authRegister.Email);
+                logger.LogWarning("Registration failed for email: {Email}.", authRegister.Email);
                 return ControllerUtil.GetActionResultFromError(response);
             }
 
-            logger.LogInformation("User registration successful for email: {Email}", authRegister.Email);
-            return StatusCode(201, response);
+            logger.LogInformation("Registration successful for email: {Email}", authRegister.Email);
+            return StatusCode(StatusCodes.Status201Created, response);
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error in registering user details for email: {Email}", authRegister.Email);
-            return Problem("An error occurred while processing your request.");
+            logger.LogError(ex, "Unexpected error occurred during user registration.");
+            return Problem("An internal server error occurred. Please try again later.");
         }
     }
 
