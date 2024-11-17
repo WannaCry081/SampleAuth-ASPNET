@@ -50,6 +50,9 @@ public interface IAuthService
     /// </returns>
     Task<ApiResponse<object?>> ForgotUserPasswordAsync(string email);
 
+    Task<ApiResponse<AuthDto>> ResetUserPasswordAsync(
+        string resetToken, AuthResetPasswordDto authResetPassword);
+
     /// <summary>
     ///     Remove user's revoked tokens.
     /// </summary>
