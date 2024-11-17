@@ -1,4 +1,4 @@
-namespace sample_auth_aspnet.Services.Utils;
+namespace sample_auth_aspnet.Models.Utils;
 
 public class JWTSettings
 {

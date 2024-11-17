@@ -1,9 +1,10 @@
 using System.Text;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
-using sample_auth_aspnet.Models.Entities;
 using System.IdentityModel.Tokens.Jwt;
+using sample_auth_aspnet.Models.Entities;
 using sample_auth_aspnet.Models.Dtos.Auth;
+using sample_auth_aspnet.Models.Utils;
 
 namespace sample_auth_aspnet.Services.Utils;
 
@@ -96,7 +97,7 @@ public static class TokenUtil
         var expClaim = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
         if (string.IsNullOrEmpty(expClaim) || !long.TryParse(expClaim, out var expSeconds))
         {
-            return true; // Treat missing or invalid exp claim as "expired"
+            return true;
         }
 
         var expirationTime = DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime;
