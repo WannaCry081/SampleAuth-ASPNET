@@ -245,10 +245,7 @@ public class AuthController(
             if (!response.Success)
             {
                 logger.LogWarning("Failed to send email to {Email}. The email might not be registered.", authForgotPassword.Email);
-                return BadRequest(new
-                {
-                    Message = "Failed to process the forgot password request."
-                });
+                return ControllerUtil.GetActionResultFromError(response);
             }
 
             logger.LogInformation("Forgot password email sent successfully to {Email}.", authForgotPassword.Email);
