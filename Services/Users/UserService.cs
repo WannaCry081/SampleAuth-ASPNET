@@ -15,6 +15,13 @@ public class UserService(
         var user = await context.Users.FirstOrDefaultAsync(
             u => u.Id.Equals(id));
 
+        if (user is null)
+        {
+            return ApiResponse<UserDetailsDto>.ErrorResponse(
+                Error.ENTITY_NOT_FOUND("User"), Error.ErrorType.NotFound
+            );
+        }
+
         var userDetails = mapper.Map<UserDetailsDto>(user);
 
         return ApiResponse<UserDetailsDto>.SuccessResponse(userDetails, Success.ENTITY_RETRIEVED("User Details"));
