@@ -1,5 +1,4 @@
 global using Microsoft.EntityFrameworkCore;
-using System.Text;
 using System.Reflection;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc;
@@ -158,7 +157,11 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
         resolver.GetRequiredService<IOptions<SMTPSettings>>().Value);
     #endregion
 
-    services.AddTransient<DataContext>();
+    #region Application Data Binding
+    services.Configure<ApplicationSettings>(configuration.GetSection("Application"));
+    services.AddSingleton(resolver =>
+        resolver.GetRequiredService<IOptions<ApplicationSettings>>().Value);
+    #endregion
 
     #region Background Service 
     services.AddHostedService<AuthBackgroundService>();
