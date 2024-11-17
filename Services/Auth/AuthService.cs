@@ -199,4 +199,18 @@ public class AuthService(
             .Where(t => t.IsRevoked || t.Expiration < DateTime.UtcNow)
             .ExecuteDeleteAsync();
     }
+
+    private async Task SaveRefreshTokenAsync(User user, string refreshToken, int expiryDays)
+    {
+        var token = new Token
+        {
+            UserId = user.Id,
+            Refresh = refreshToken,
+            Expiration = DateTime.UtcNow.AddDays(expiryDays)
+        };
+
+        user.Tokens.Add(token);
+        await context.Tokens.AddAsync(token);
+        await context.SaveChangesAsync();
+    }
 }
