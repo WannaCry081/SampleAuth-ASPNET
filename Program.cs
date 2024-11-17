@@ -10,6 +10,8 @@ using Newtonsoft.Json.Converters;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using sample_auth_aspnet.Services.Users;
+using sample_auth_aspnet.Services.Utils;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -142,7 +144,13 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
 
     services.AddLogging();
 
+    #region JWT Data Binding
+    services.Configure<JWTSettings>(configuration.GetSection("JWT"));
+    services.AddSingleton(resolver =>
+        resolver.GetRequiredService<IOptions<JWTSettings>>().Value);
+
     services.AddTransient<DataContext>();
+    #endregion
 
     #region Background Service 
     services.AddHostedService<AuthBackgroundService>();
