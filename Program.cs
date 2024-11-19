@@ -41,17 +41,10 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
 
-    try
-    {
-        var context = services.GetRequiredService<DataContext>();
+    var context = services.GetRequiredService<DataContext>();
+    if (context.Database.GetPendingMigrations().Any())
         context.Database.Migrate();
-    }
-    catch (Exception ex)
-    {
-        // Log the exception or handle errors
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while applying migrations.");
-    }
+
 }
 #endregion
 
