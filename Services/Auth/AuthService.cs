@@ -158,7 +158,7 @@ public class AuthService(
         return ApiResponse<object?>.SuccessResponse(null, Success.EMAILED_SUCCESSFULLY);
     }
 
-    public async Task<ApiResponse<AuthDto>> ResetUserPasswordAsync(
+    public async Task<ApiResponse<object?>> ResetUserPasswordAsync(
     string resetToken, AuthResetPasswordDto authResetPassword)
     {
         const string ResetPasswordPurpose = "reset-password";
@@ -170,7 +170,7 @@ public class AuthService(
             if (principal is null)
             {
                 details.Add("token", "Invalid or expired reset token.");
-                return ApiResponse<AuthDto>.ErrorResponse(
+                return ApiResponse<object?>.ErrorResponse(
                     Error.Unauthorized, Error.ErrorType.Unauthorized, details);
             }
 
@@ -178,7 +178,7 @@ public class AuthService(
             if (string.IsNullOrEmpty(purposeClaim) || purposeClaim != ResetPasswordPurpose)
             {
                 details.Add("token", "Invalid token purpose.");
-                return ApiResponse<AuthDto>.ErrorResponse(
+                return ApiResponse<object?>.ErrorResponse(
                     Error.Unauthorized, Error.ErrorType.Unauthorized, details);
             }
 
@@ -186,7 +186,7 @@ public class AuthService(
             if (string.IsNullOrEmpty(emailClaim))
             {
                 details.Add("token", "Invalid email information in reset token.");
-                return ApiResponse<AuthDto>.ErrorResponse(
+                return ApiResponse<object?>.ErrorResponse(
                     Error.Unauthorized, Error.ErrorType.Unauthorized, details);
             }
 
@@ -194,7 +194,7 @@ public class AuthService(
             if (user is null)
             {
                 details.Add("token", "User not found.");
-                return ApiResponse<AuthDto>.ErrorResponse(
+                return ApiResponse<object?>.ErrorResponse(
                     Error.Unauthorized, Error.ErrorType.Unauthorized, details);
             }
 
@@ -205,14 +205,14 @@ public class AuthService(
             await SaveRefreshTokenAsync(user, authDto.Refresh, jwt.RefreshTokenExpiry);
             await transaction.CommitAsync();
 
-            return ApiResponse<AuthDto>.SuccessResponse(
+            return ApiResponse<object?>.SuccessResponse(
                 authDto, Success.IS_AUTHENTICATED);
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
             logger.LogError(ex, "Error resettings user's password.");
-            return ApiResponse<AuthDto>.ErrorResponse(
+            return ApiResponse<object?>.ErrorResponse(
                 Error.ERROR_UPDATING_RESOURCE("User"), Error.ErrorType.InternalServer);
         }
     }
