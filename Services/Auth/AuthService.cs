@@ -180,7 +180,7 @@ public class AuthService(
                     Error.Unauthorized, Error.ErrorType.Unauthorized, details);
             }
 
-            var purposeClaim = principal.Claims.FirstOrDefault(c => c.Type == "Purpose")?.Value;
+            var purposeClaim = principal.Claims.FirstOrDefault(c => c.Type == "purpose")?.Value;
             if (string.IsNullOrEmpty(purposeClaim) || purposeClaim != ResetPasswordPurpose)
             {
                 details.Add("token", "Invalid token purpose.");
