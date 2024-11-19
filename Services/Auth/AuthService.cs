@@ -144,18 +144,30 @@ public class AuthService(
 
     public async Task<ApiResponse<object?>> ForgotUserPasswordAsync(string email)
     {
-        var user = await context.Users
-            .FirstOrDefaultAsync(u => u.Email.Equals(email));
-
-        if (user is not null)
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
         {
-            var resetToken = TokenUtil.GenerateToken(user, jwt, TokenUtil.TokenType.RESET);
-            var resetLink = $"{app.Url}?token={resetToken}";
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Email.Equals(email));
 
-            await emailService.SendResetEmailAsync(email, resetLink);
+            if (user != null)
+            {
+                var resetToken = TokenUtil.GenerateToken(user, jwt, TokenUtil.TokenType.RESET);
+                var resetLink = $"{app.Url}?token={resetToken}";
+
+                await SaveRefreshTokenAsync(user, resetToken, jwt.ResetTokenExpiry);
+                await emailService.SendResetEmailAsync(email, resetLink);
+                await transaction.CommitAsync();
+            }
+
+            return ApiResponse<object?>.SuccessResponse(null, Success.EMAILED_SUCCESSFULLY);
         }
-
-        return ApiResponse<object?>.SuccessResponse(null, Success.EMAILED_SUCCESSFULLY);
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            logger.LogError(ex, "Error sending forgot-password email.");
+            return ApiResponse<object?>.ErrorResponse(
+                Error.ERROR_CREATING_RESOURCE("Token"), Error.ErrorType.InternalServer);
+        }
     }
 
     public async Task<ApiResponse<object?>> ResetUserPasswordAsync(
