@@ -20,6 +20,6 @@ public class AuthLoginDto
     /// </summary>
     /// <example>StrongPassword123</example>
     [Required(ErrorMessage = "Password is required.")]
-    [MaxLength(255, ErrorMessage = "Password cannot exceeds {1} characters.")]
+    [MaxLength(255, ErrorMessage = "Password cannot exceed {1} characters.")]
     public string Password { get; init; } = string.Empty;
 };
