@@ -240,20 +240,17 @@ public class AuthController(
 
         try
         {
-            var response = await authService.ForgotUserPasswordAsync(authForgotPassword.Email);
+            var response = await authService.ForgotUserPasswordAsync(
+                authForgotPassword.Email);
 
-            if (!response.Success)
-            {
-                logger.LogWarning("Failed to send email to {Email}. The email might not be registered.", authForgotPassword.Email);
-                return ControllerUtil.GetActionResultFromError(response);
-            }
-
-            logger.LogInformation("Forgot password email sent successfully to {Email}.", authForgotPassword.Email);
+            logger.LogInformation("Forgot password email sent successfully to {Email}.",
+                authForgotPassword.Email);
             return Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unexpected error occurred during forgot password request for {Email}.", authForgotPassword.Email);
+            logger.LogError(ex, "Unexpected error occurred during forgot password request for {Email}.",
+                authForgotPassword.Email);
             return Problem("An internal server error occurred. Please try again later.");
         }
     }
