@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using sample_auth_aspnet.Controllers.Utils;
 using sample_auth_aspnet.Models.Dtos.Auth;
@@ -276,7 +277,7 @@ public class AuthController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized,
         Type = typeof(ErrorResponseDto))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ResetUserPassword([FromQuery] string resetToken, [FromBody] AuthResetPasswordDto authResetPassword)
+    public async Task<IActionResult> ResetUserPassword([Required][FromQuery] string resetToken, [FromBody] AuthResetPasswordDto authResetPassword)
     {
         logger.LogInformation("Reset password request initiated for user.");
         if (!ModelState.IsValid)
