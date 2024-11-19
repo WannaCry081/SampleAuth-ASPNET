@@ -2,12 +2,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace sample_auth_aspnet.Models.Entities;
 
-[Index(nameof(Refresh), IsUnique = true)]
+[Index(nameof(Key), IsUnique = true)]
 public class Token : BaseEntity
 {
     [ForeignKey("User")]
     public int UserId { get; init; }
-    public string Refresh { get; set; } = null!;
+    public string Key { get; set; } = null!;
     public bool IsRevoked { get; set; } = false;
     public DateTime Expiration { get; init; }
 

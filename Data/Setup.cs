@@ -21,7 +21,7 @@ public partial class DataContext
         modelBuilder.Entity<Token>()
             .HasIndex(t => new
             {
-                t.Refresh
+                t.Key
             })
             .IsUnique();
 

@@ -76,7 +76,7 @@ public class AuthService(
     public async Task<bool> LogoutUserAsync(string refreshToken)
     {
         var token = await context.Tokens.FirstOrDefaultAsync(
-            t => t.Refresh.Equals(refreshToken) && !t.IsRevoked && t.Expiration >= DateTime.UtcNow);
+            t => t.Key.Equals(refreshToken) && !t.IsRevoked && t.Expiration >= DateTime.UtcNow);
 
         if (token is null)
             return false;
@@ -103,7 +103,7 @@ public class AuthService(
 
             var token = await context.Tokens
                 .Include(t => t.User)
-                .FirstOrDefaultAsync(t => t.Refresh == refreshToken);
+                .FirstOrDefaultAsync(t => t.Key == refreshToken);
 
             if (token is null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
             {
@@ -166,7 +166,6 @@ public class AuthService(
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-
             var principal = TokenUtil.ValidateToken(resetToken, jwt);
             if (principal is null)
             {
@@ -225,12 +224,12 @@ public class AuthService(
             .ExecuteDeleteAsync();
     }
 
-    private async Task SaveRefreshTokenAsync(User user, string refreshToken, int expiryDays)
+    private async Task SaveRefreshTokenAsync(User user, string key, int expiryDays)
     {
         var token = new Token
         {
             UserId = user.Id,
-            Refresh = refreshToken,
+            Key = key,
             Expiration = DateTime.UtcNow.AddDays(expiryDays)
         };
 
