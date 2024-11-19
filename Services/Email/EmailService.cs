@@ -8,7 +8,7 @@ public class EmailService(
     ILogger<EmailService> logger,
     SMTPSettings smtp) : IEmailService
 {
-    public async Task<bool> SendResetEmailAsync(string toEmail, string link)
+    public async Task SendResetEmailAsync(string toEmail, string link)
     {
         var htmlTemplate = EmailTemplate.GetForgotPasswordTemplate()
             .Replace("{{email}}", toEmail)
@@ -30,15 +30,7 @@ public class EmailService(
             EnableSsl = true
         };
 
-        try
-        {
-            await smtpClient.SendMailAsync(mailMessage);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error occurred while sending an email to {Email}", toEmail);
-            return false;
-        }
+        logger.LogInformation("Sending email to {Email}", toEmail);
+        await smtpClient.SendMailAsync(mailMessage);
     }
 }
