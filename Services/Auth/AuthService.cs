@@ -147,18 +147,13 @@ public class AuthService(
         var user = await context.Users
             .FirstOrDefaultAsync(u => u.Email.Equals(email));
 
-        if (user is null)
-            return ApiResponse<object?>.ErrorResponse(
-                Error.NotFound, Error.ErrorType.NotFound);
+        if (user is not null)
+        {
+            var resetToken = TokenUtil.GenerateToken(user, jwt, TokenUtil.TokenType.RESET);
+            var resetLink = $"{app.Url}?token={resetToken}";
 
-
-        var resetToken = TokenUtil.GenerateToken(user, jwt, TokenUtil.TokenType.RESET);
-        var resetLink = $"{app.Url}?token={resetToken}";
-
-        var isEmailSent = await emailService.SendResetEmailAsync(email, resetLink);
-        if (!isEmailSent)
-            return ApiResponse<object?>.ErrorResponse(
-                Error.ValidationError, Error.ErrorType.ValidationError);
+            await emailService.SendResetEmailAsync(email, resetLink);
+        }
 
         return ApiResponse<object?>.SuccessResponse(null, Success.EMAILED_SUCCESSFULLY);
     }
