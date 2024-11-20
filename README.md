@@ -24,7 +24,6 @@ This project demonstrates an authentication system developed using .NET 8 in ASP
 
    ```bash
    git clone https://github.com/WannaCry081/SampleAuth-ASPNET.git
-
    ```
 
 2. Update the connection string in appsettings.json to match your configuration:
@@ -44,13 +43,35 @@ This project demonstrates an authentication system developed using .NET 8 in ASP
    dotnet run     # Runs the application
    ```
 
-4. Alternatively, if Docker is installed, you can start the application using:
+4. Alternatively, If Docker is installed on your system, you can start the application with Docker Compose. Ensure you have a `.env` file (see below) in the project directory for configuring the environment variables.
 
    ```bash
-   docker compose up
+   docker compose --env-file=./.env up
    ```
 
    The application should now be running at [http://localhost:5026/](http://localhost:5026/swagger/index.html)
+
+5. Create a `.env` file in the root directory to configure environment variables for docker-compose.yml. Below is a sample template for your `.env` or check out the `.env.example` file:
+
+   ```
+   # Application Base URL
+   APPLICATION_URL="http://localhost:5026"
+
+   # Database connection string
+   DEFAULT_CONNECTION="YourDatabaseConnectionStringHere"
+
+   # JWT Configuration
+   JWT_SECRET="YourJWTSecretHere"
+   JWT_ISSUER="YourJWTIssuerHere"
+   JWT_AUDIENCE="YourJWTAudienceHere"
+   JWT_ACCESS_TOKEN_EXPIRY=1             # Access token expiry in hours
+   JWT_REFRESH_TOKEN_EXPIRY=1            # Refresh token expiry in days
+   JWT_RESET_TOKEN_EXPIRY=10             # Reset token expiry in minutes
+
+   # SMTP Credentials
+   SMTP_USERNAME="YourSMTPUsernameHere"
+   SMTP_PASSWORD="YourSMTPPasswordHere"
+   ```
 
 ## 📖 Usage
 
@@ -77,13 +98,16 @@ If you'd like to contribute to this project, please follow these guidelines:
    ```
 3. Commit your changes:
    ```bash
-   git commit -am 'Add new feature'
+   git commit -am 'feat: add new feature'
    ```
 4. Push to the branch:
    ```bash
    git push origin feature/YourFeature
    ```
 5. Create a new Pull Request for review.
+
+> [!NOTE]
+> Ensure that all commits follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0-beta.2/) specification for consistent and meaningful commit messages.
 
 ## 📬 Contact
 
