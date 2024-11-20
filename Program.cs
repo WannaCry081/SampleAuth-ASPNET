@@ -170,9 +170,9 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     #endregion
 
     #region Application Data Binding
-    services.Configure<ApplicationSettings>(configuration.GetSection("Application"));
+    services.Configure<AppSettings>(configuration.GetSection("Application"));
     services.AddSingleton(resolver =>
-        resolver.GetRequiredService<IOptions<ApplicationSettings>>().Value);
+        resolver.GetRequiredService<IOptions<AppSettings>>().Value);
     #endregion
 
     #region Background Service 

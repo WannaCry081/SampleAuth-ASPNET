@@ -1,4 +1,5 @@
 using AutoMapper;
+using System.Security.Claims;
 using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Entities;
@@ -6,7 +7,6 @@ using sample_auth_aspnet.Models.Response;
 using sample_auth_aspnet.Services.Email;
 using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Utils;
-using System.Security.Claims;
 
 namespace sample_auth_aspnet.Services.Auth;
 public class AuthService(
@@ -15,7 +15,7 @@ public class AuthService(
     DataContext context,
     IMapper mapper,
     JWTSettings jwt,
-    ApplicationSettings app) : IAuthService
+    AppSettings app) : IAuthService
 {
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
@@ -50,7 +50,6 @@ public class AuthService(
                 Error.ERROR_CREATING_RESOURCE("User"), Error.ErrorType.InternalServer);
         }
     }
-
     public async Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin)
     {
         var details = new Dictionary<string, string>();
