@@ -24,7 +24,6 @@ This project demonstrates an authentication system developed using .NET 8 in ASP
 
    ```bash
    git clone https://github.com/WannaCry081/SampleAuth-ASPNET.git
-
    ```
 
 2. Update the connection string in appsettings.json to match your configuration:
@@ -99,13 +98,16 @@ If you'd like to contribute to this project, please follow these guidelines:
    ```
 3. Commit your changes:
    ```bash
-   git commit -am 'Add new feature'
+   git commit -am 'feat: add new feature'
    ```
 4. Push to the branch:
    ```bash
    git push origin feature/YourFeature
    ```
 5. Create a new Pull Request for review.
+
+> [!NOTE]
+> Ensure that all commits follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0-beta.2/) specification for consistent and meaningful commit messages.
 
 ## 📬 Contact
 
