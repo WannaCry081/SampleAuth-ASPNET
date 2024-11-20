@@ -219,7 +219,7 @@ public class AuthController(
     ///     - <see cref="NotFoundObjectResult"/> if the request do not exists.
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
-    /// <response code="200">Returns the new access and refresh tokens.</response>
+    /// <response code="200">Returns a success message.</response>
     /// <response code="400">Bad request.</response>
     /// <response code="404">No resource found.</response>
     /// <response code="500">Internal server error.</response>
@@ -268,6 +268,10 @@ public class AuthController(
     ///     - <see cref="UnauthorizedObjectResult"/> if an the credential is invalid.
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
+    /// <response code="200">Returns a success message.</response>
+    /// <response code="400">Bad request.</response>
+    /// <response code="404">No resource found.</response>
+    /// <response code="500">Internal server error.</response>
     [HttpPost("reset-password")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK,
