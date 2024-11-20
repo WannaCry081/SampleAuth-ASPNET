@@ -186,46 +186,61 @@ public class AuthService(
                     Error.Unauthorized, Error.ErrorType.Unauthorized, details);
             }
 
-            var purposeClaim = principal.Claims.FirstOrDefault(c => c.Type == "purpose")?.Value;
-            if (string.IsNullOrEmpty(purposeClaim) || purposeClaim != ResetPasswordPurpose)
-            {
-                details.Add("token", "Invalid token purpose.");
-                return ApiResponse<object?>.ErrorResponse(
-                    Error.Unauthorized, Error.ErrorType.Unauthorized, details);
-            }
+            var purposeClaim = principal.Claims.FirstOrDefault(
+                c => c.Type == "purpose")?.Value;
+            var emailClaim = principal.Claims.FirstOrDefault(
+                c => c.Type == ClaimTypes.Email)?.Value;
 
-            var emailClaim = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-            if (string.IsNullOrEmpty(emailClaim))
+            if (string.IsNullOrEmpty(purposeClaim) ||
+                string.IsNullOrEmpty(emailClaim) ||
+                purposeClaim != ResetPasswordPurpose)
             {
                 details.Add("token", "Invalid email information in reset token.");
                 return ApiResponse<object?>.ErrorResponse(
                     Error.Unauthorized, Error.ErrorType.Unauthorized, details);
             }
 
-            var user = await context.Users.FirstOrDefaultAsync(u => u.Email.Equals(emailClaim));
+            var user = await context.Users
+                .Include(u => u.Tokens)
+                .FirstOrDefaultAsync(u => u.Email.Equals(emailClaim));
+
             if (user is null)
             {
-                details.Add("token", "User not found.");
+                details.Add("token", "Invalid user credentials");
                 return ApiResponse<object?>.ErrorResponse(
                     Error.Unauthorized, Error.ErrorType.Unauthorized, details);
             }
 
+            var isTokenValid = user.Tokens.Any(
+                t => !t.IsRevoked && t.Key.Equals(resetToken));
+
+            if (!isTokenValid)
+            {
+                details.Add("token", "Invalid reset token.");
+                return ApiResponse<object?>.ErrorResponse(
+                    Error.Unauthorized, Error.ErrorType.Unauthorized, details);
+            }
+
+            var activeTokens = user.Tokens.Where(
+                t => !t.IsRevoked && t.Expiration > DateTime.UtcNow);
+
+            foreach (var activeToken in activeTokens)
+            {
+                activeToken.IsRevoked = true;
+            }
+
             user.Password = PasswordUtil.HashPassword(authResetPassword.Password);
             await context.SaveChangesAsync();
-
-            var authDto = TokenUtil.GenerateTokens(user, jwt);
-            await SaveRefreshTokenAsync(user, authDto.Refresh, jwt.RefreshTokenExpiry);
             await transaction.CommitAsync();
 
-            return ApiResponse<object?>.SuccessResponse(
-                authDto, Success.IS_AUTHENTICATED);
+            return ApiResponse<object?>.SuccessResponse(null, Success.ENTITY_UPDATED("Password"));
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
             logger.LogError(ex, "Error resettings user's password.");
             return ApiResponse<object?>.ErrorResponse(
-                Error.ERROR_UPDATING_RESOURCE("User"), Error.ErrorType.InternalServer);
+                Error.ERROR_UPDATING_RESOURCE("Password"), Error.ErrorType.InternalServer);
         }
     }
 
