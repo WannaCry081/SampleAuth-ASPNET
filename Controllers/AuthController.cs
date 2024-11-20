@@ -1,5 +1,5 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using sample_auth_aspnet.Controllers.Utils;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Dtos.Reponse;

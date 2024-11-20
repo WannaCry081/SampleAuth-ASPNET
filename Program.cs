@@ -4,14 +4,14 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Converters;
+using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Services.Auth;
-using Newtonsoft.Json.Converters;
-using Microsoft.OpenApi.Models;
-using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Users;
 using sample_auth_aspnet.Services.Email;
+using sample_auth_aspnet.Models.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 

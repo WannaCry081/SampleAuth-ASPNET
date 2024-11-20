@@ -22,4 +22,4 @@ public class AuthLoginDto
     [Required(ErrorMessage = "Password is required.")]
     [MaxLength(255, ErrorMessage = "Password cannot exceed {1} characters.")]
     public string Password { get; init; } = string.Empty;
-};
+}

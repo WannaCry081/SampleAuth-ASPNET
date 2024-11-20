@@ -1,5 +1,4 @@
 namespace sample_auth_aspnet.Services.Auth;
-
 public class AuthBackgroundService(
     IServiceProvider serviceProvider,
     ILogger<AuthBackgroundService> logger
