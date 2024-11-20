@@ -19,14 +19,14 @@ public class AuthRegisterDto
     ///     The first name of the user.
     /// </summary>
     /// <example>John</example>
-    [MaxLength(50, ErrorMessage = "First name cannot exceeds {1} characters.")]
+    [MaxLength(50, ErrorMessage = "First name cannot exceed {1} characters.")]
     public string FirstName { get; init; } = string.Empty;
 
     /// <summary>
     ///     The last name of the user.
     /// </summary>
     /// <example>Doe</example>
-    [MaxLength(50, ErrorMessage = "Last name cannot exceeds {1} characters.")]
+    [MaxLength(50, ErrorMessage = "Last name cannot exceed {1} characters.")]
     public string LastName { get; init; } = string.Empty;
 
     /// <summary>
@@ -34,7 +34,7 @@ public class AuthRegisterDto
     /// </summary>
     /// <example>StrongPassword123</example>
     [Required(ErrorMessage = "Password is required.")]
-    [MaxLength(255, ErrorMessage = "Password cannot exceeds {1} characters.")]
+    [MaxLength(255, ErrorMessage = "Password cannot exceed {1} characters.")]
     [MinLength(8, ErrorMessage = "Password must be at least {1} characters.")]
     [DataType(DataType.Password)]
     public string Password { get; init; } = string.Empty;

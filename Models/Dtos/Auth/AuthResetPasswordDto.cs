@@ -9,7 +9,7 @@ public class AuthResetPasswordDto
     /// </summary>
     /// <example>StrongPassword123</example>
     [Required(ErrorMessage = "Password is required.")]
-    [MaxLength(255, ErrorMessage = "Password cannot exceeds {1} characters.")]
+    [MaxLength(255, ErrorMessage = "Password cannot exceed {1} characters.")]
     [MinLength(8, ErrorMessage = "Password must be at least {1} characters.")]
     [DataType(DataType.Password)]
     public string Password { get; init; } = string.Empty;

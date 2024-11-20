@@ -1,4 +1,5 @@
 using AutoMapper;
+using System.Security.Claims;
 using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Entities;
@@ -6,7 +7,6 @@ using sample_auth_aspnet.Models.Response;
 using sample_auth_aspnet.Services.Email;
 using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Utils;
-using System.Security.Claims;
 
 namespace sample_auth_aspnet.Services.Auth;
 public class AuthService(
@@ -15,7 +15,7 @@ public class AuthService(
     DataContext context,
     IMapper mapper,
     JWTSettings jwt,
-    ApplicationSettings app) : IAuthService
+    AppSettings app) : IAuthService
 {
     public async Task<ApiResponse<AuthDto>> RegisterUserAsync(AuthRegisterDto authRegister)
     {
@@ -50,7 +50,6 @@ public class AuthService(
                 Error.ERROR_CREATING_RESOURCE("User"), Error.ErrorType.InternalServer);
         }
     }
-
     public async Task<ApiResponse<AuthDto>> LoginUserAsync(AuthLoginDto authLogin)
     {
         var details = new Dictionary<string, string>();
@@ -76,7 +75,7 @@ public class AuthService(
     public async Task<bool> LogoutUserAsync(string refreshToken)
     {
         var token = await context.Tokens.FirstOrDefaultAsync(
-            t => t.Refresh.Equals(refreshToken) && !t.IsRevoked && t.Expiration >= DateTime.UtcNow);
+            t => t.Key.Equals(refreshToken) && !t.IsRevoked && t.Expiration >= DateTime.UtcNow);
 
         if (token is null)
             return false;
@@ -103,7 +102,7 @@ public class AuthService(
 
             var token = await context.Tokens
                 .Include(t => t.User)
-                .FirstOrDefaultAsync(t => t.Refresh == refreshToken);
+                .FirstOrDefaultAsync(t => t.Key == refreshToken);
 
             if (token is null || token.IsRevoked || token.Expiration < DateTime.UtcNow)
             {
@@ -144,26 +143,33 @@ public class AuthService(
 
     public async Task<ApiResponse<object?>> ForgotUserPasswordAsync(string email)
     {
-        var user = await context.Users
-            .FirstOrDefaultAsync(u => u.Email.Equals(email));
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Email.Equals(email));
 
-        if (user is null)
+            if (user != null)
+            {
+                var resetToken = TokenUtil.GenerateToken(user, jwt, TokenUtil.TokenType.RESET);
+                var resetLink = $"{app.Url}?token={resetToken}";
+
+                await SaveRefreshTokenAsync(user, resetToken, jwt.ResetTokenExpiry);
+                await emailService.SendResetEmailAsync(email, resetLink);
+                await transaction.CommitAsync();
+            }
+
+            return ApiResponse<object?>.SuccessResponse(null, Success.EMAILED_SUCCESSFULLY);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            logger.LogError(ex, "Error sending forgot-password email.");
             return ApiResponse<object?>.ErrorResponse(
-                Error.NotFound, Error.ErrorType.NotFound);
-
-
-        var resetToken = TokenUtil.GenerateToken(user, jwt, TokenUtil.TokenType.RESET);
-        var resetLink = $"{app.Url}?token={resetToken}";
-
-        var isEmailSent = await emailService.SendResetEmailAsync(email, resetLink);
-        if (!isEmailSent)
-            return ApiResponse<object?>.ErrorResponse(
-                Error.ValidationError, Error.ErrorType.ValidationError);
-
-        return ApiResponse<object?>.SuccessResponse(null, Success.EMAILED_SUCCESSFULLY);
+                Error.ERROR_CREATING_RESOURCE("Token"), Error.ErrorType.InternalServer);
+        }
     }
 
-    public async Task<ApiResponse<AuthDto>> ResetUserPasswordAsync(
+    public async Task<ApiResponse<object?>> ResetUserPasswordAsync(
     string resetToken, AuthResetPasswordDto authResetPassword)
     {
         const string ResetPasswordPurpose = "reset-password";
@@ -171,55 +177,69 @@ public class AuthService(
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-
             var principal = TokenUtil.ValidateToken(resetToken, jwt);
             if (principal is null)
             {
                 details.Add("token", "Invalid or expired reset token.");
-                return ApiResponse<AuthDto>.ErrorResponse(
+                return ApiResponse<object?>.ErrorResponse(
                     Error.Unauthorized, Error.ErrorType.Unauthorized, details);
             }
 
-            var purposeClaim = principal.Claims.FirstOrDefault(c => c.Type == "Purpose")?.Value;
-            if (string.IsNullOrEmpty(purposeClaim) || purposeClaim != ResetPasswordPurpose)
-            {
-                details.Add("token", "Invalid token purpose.");
-                return ApiResponse<AuthDto>.ErrorResponse(
-                    Error.Unauthorized, Error.ErrorType.Unauthorized, details);
-            }
+            var purposeClaim = principal.Claims.FirstOrDefault(
+                c => c.Type == "purpose")?.Value;
+            var emailClaim = principal.Claims.FirstOrDefault(
+                c => c.Type == ClaimTypes.Email)?.Value;
 
-            var emailClaim = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-            if (string.IsNullOrEmpty(emailClaim))
+            if (string.IsNullOrEmpty(purposeClaim) ||
+                string.IsNullOrEmpty(emailClaim) ||
+                purposeClaim != ResetPasswordPurpose)
             {
                 details.Add("token", "Invalid email information in reset token.");
-                return ApiResponse<AuthDto>.ErrorResponse(
+                return ApiResponse<object?>.ErrorResponse(
                     Error.Unauthorized, Error.ErrorType.Unauthorized, details);
             }
 
-            var user = await context.Users.FirstOrDefaultAsync(u => u.Email.Equals(emailClaim));
+            var user = await context.Users
+                .Include(u => u.Tokens)
+                .FirstOrDefaultAsync(u => u.Email.Equals(emailClaim));
+
             if (user is null)
             {
-                details.Add("token", "User not found.");
-                return ApiResponse<AuthDto>.ErrorResponse(
+                details.Add("token", "Invalid user credentials");
+                return ApiResponse<object?>.ErrorResponse(
                     Error.Unauthorized, Error.ErrorType.Unauthorized, details);
+            }
+
+            var isTokenValid = user.Tokens.Any(
+                t => !t.IsRevoked && t.Key.Equals(resetToken));
+
+            if (!isTokenValid)
+            {
+                details.Add("token", "Invalid reset token.");
+                return ApiResponse<object?>.ErrorResponse(
+                    Error.Unauthorized, Error.ErrorType.Unauthorized, details);
+            }
+
+            var activeTokens = user.Tokens.Where(
+                t => !t.IsRevoked && t.Expiration > DateTime.UtcNow);
+
+            foreach (var activeToken in activeTokens)
+            {
+                activeToken.IsRevoked = true;
             }
 
             user.Password = PasswordUtil.HashPassword(authResetPassword.Password);
             await context.SaveChangesAsync();
-
-            var authDto = TokenUtil.GenerateTokens(user, jwt);
-            await SaveRefreshTokenAsync(user, authDto.Refresh, jwt.RefreshTokenExpiry);
             await transaction.CommitAsync();
 
-            return ApiResponse<AuthDto>.SuccessResponse(
-                authDto, Success.IS_AUTHENTICATED);
+            return ApiResponse<object?>.SuccessResponse(null, Success.ENTITY_UPDATED("Password"));
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
             logger.LogError(ex, "Error resettings user's password.");
-            return ApiResponse<AuthDto>.ErrorResponse(
-                Error.ERROR_UPDATING_RESOURCE("User"), Error.ErrorType.InternalServer);
+            return ApiResponse<object?>.ErrorResponse(
+                Error.ERROR_UPDATING_RESOURCE("Password"), Error.ErrorType.InternalServer);
         }
     }
 
@@ -230,12 +250,12 @@ public class AuthService(
             .ExecuteDeleteAsync();
     }
 
-    private async Task SaveRefreshTokenAsync(User user, string refreshToken, int expiryDays)
+    private async Task SaveRefreshTokenAsync(User user, string key, int expiryDays)
     {
         var token = new Token
         {
             UserId = user.Id,
-            Refresh = refreshToken,
+            Key = key,
             Expiration = DateTime.UtcNow.AddDays(expiryDays)
         };
 

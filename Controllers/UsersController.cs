@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using sample_auth_aspnet.Controllers.Utils;
 using sample_auth_aspnet.Models.Dtos.Reponse;
 using sample_auth_aspnet.Models.Dtos.Users;

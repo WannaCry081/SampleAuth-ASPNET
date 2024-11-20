@@ -44,7 +44,7 @@ public static class TokenUtil
             case TokenType.RESET:
                 expires = expires.AddMinutes(jwt.ResetTokenExpiry);
                 claims.Add(new(ClaimTypes.Email, user.Email));
-                claims.Add(new("Purpose", "reset-password"));
+                claims.Add(new("purpose", "reset-password"));
                 break;
         }
 

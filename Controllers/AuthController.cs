@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using sample_auth_aspnet.Controllers.Utils;
 using sample_auth_aspnet.Models.Dtos.Auth;
 using sample_auth_aspnet.Models.Dtos.Reponse;
@@ -218,7 +219,7 @@ public class AuthController(
     ///     - <see cref="NotFoundObjectResult"/> if the request do not exists.
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
-    /// <response code="200">Returns the new access and refresh tokens.</response>
+    /// <response code="200">Returns a success message.</response>
     /// <response code="400">Bad request.</response>
     /// <response code="404">No resource found.</response>
     /// <response code="500">Internal server error.</response>
@@ -240,20 +241,17 @@ public class AuthController(
 
         try
         {
-            var response = await authService.ForgotUserPasswordAsync(authForgotPassword.Email);
+            var response = await authService.ForgotUserPasswordAsync(
+                authForgotPassword.Email);
 
-            if (!response.Success)
-            {
-                logger.LogWarning("Failed to send email to {Email}. The email might not be registered.", authForgotPassword.Email);
-                return ControllerUtil.GetActionResultFromError(response);
-            }
-
-            logger.LogInformation("Forgot password email sent successfully to {Email}.", authForgotPassword.Email);
+            logger.LogInformation("Forgot password email sent successfully to {Email}.",
+                authForgotPassword.Email);
             return Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unexpected error occurred during forgot password request for {Email}.", authForgotPassword.Email);
+            logger.LogError(ex, "Unexpected error occurred during forgot password request for {Email}.",
+                authForgotPassword.Email);
             return Problem("An internal server error occurred. Please try again later.");
         }
     }
@@ -270,6 +268,10 @@ public class AuthController(
     ///     - <see cref="UnauthorizedObjectResult"/> if an the credential is invalid.
     ///     - <see cref="ProblemDetails"/> if an internal server error occurs.
     /// </returns>
+    /// <response code="200">Returns a success message.</response>
+    /// <response code="400">Bad request.</response>
+    /// <response code="404">No resource found.</response>
+    /// <response code="500">Internal server error.</response>
     [HttpPost("reset-password")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK,
@@ -279,7 +281,7 @@ public class AuthController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized,
         Type = typeof(ErrorResponseDto))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ResetUserPassword([FromQuery] string resetToken, [FromBody] AuthResetPasswordDto authResetPassword)
+    public async Task<IActionResult> ResetUserPassword([Required][FromQuery] string resetToken, [FromBody] AuthResetPasswordDto authResetPassword)
     {
         logger.LogInformation("Reset password request initiated for user.");
         if (!ModelState.IsValid)

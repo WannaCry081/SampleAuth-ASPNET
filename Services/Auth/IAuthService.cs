@@ -58,7 +58,7 @@ public interface IAuthService
     /// <returns>
     ///     An access and refresh tokens if password reset is successful.
     /// </returns>
-    Task<ApiResponse<AuthDto>> ResetUserPasswordAsync(
+    Task<ApiResponse<object?>> ResetUserPasswordAsync(
         string resetToken, AuthResetPasswordDto authResetPassword);
 
     /// <summary>

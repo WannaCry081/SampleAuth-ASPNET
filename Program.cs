@@ -4,14 +4,14 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Converters;
+using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using sample_auth_aspnet.Data;
 using sample_auth_aspnet.Services.Auth;
-using Newtonsoft.Json.Converters;
-using Microsoft.OpenApi.Models;
-using sample_auth_aspnet.Models.Utils;
 using sample_auth_aspnet.Services.Users;
 using sample_auth_aspnet.Services.Email;
+using sample_auth_aspnet.Models.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -170,9 +170,9 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     #endregion
 
     #region Application Data Binding
-    services.Configure<ApplicationSettings>(configuration.GetSection("Application"));
+    services.Configure<AppSettings>(configuration.GetSection("Application"));
     services.AddSingleton(resolver =>
-        resolver.GetRequiredService<IOptions<ApplicationSettings>>().Value);
+        resolver.GetRequiredService<IOptions<AppSettings>>().Value);
     #endregion
 
     #region Background Service 
